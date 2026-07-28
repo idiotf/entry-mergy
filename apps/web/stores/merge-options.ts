@@ -13,8 +13,8 @@ export class MergeUIOptionsStore {
   }
 
   protected timestampsMap = new WeakMap<ProjectState, number>()
-  thumbnail?
-  bgm?
+  thumbnail?: never
+  bgm?: never
 
   constructor(public projectListStore = new ProjectListStore()) {
     makeAutoObservable(this)
