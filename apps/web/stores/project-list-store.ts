@@ -131,9 +131,9 @@ function swap<T>(obj: T, i: keyof T, j: keyof T) {
 
 async function getOriginOfProjectAsync(projectPromise: Promise<Project>) {
   const project = await projectPromise
-  return 'parent' in project
+  return 'parent' in project && project.parent !== null
     ? String(project.parent)
-    : 'origin' in project
+    : 'origin' in project && project.origin !== null
       ? String(project.origin)
       : undefined
 }
