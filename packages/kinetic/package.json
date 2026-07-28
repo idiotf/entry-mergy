@@ -1,0 +1,48 @@
+{
+  "name": "@entry-mergy/kinetic",
+  "version": "0.0.1",
+  "type": "module",
+  "files": ["dist"],
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    },
+    "./utils": {
+      "types": "./dist/utils.d.mts",
+      "import": "./dist/utils.mjs"
+    }
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.1.1",
+    "eslint": "^10.5.0",
+    "globals": "^17.6.0",
+    "jiti": "^2.7.0",
+    "prettier": "^3.8.3",
+    "publint": "^0.3.21",
+    "tsdown": "^0.22.5",
+    "typescript-eslint": "^8.59.2"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "scripts": {
+    "lint": "eslint",
+    "format": "prettier -w '**/*.ts'",
+    "typecheck": "tsc --noEmit",
+    "build": "tsdown src/index src/utils --publint",
+    "watch": "bun run build --watch",
+    "prepack": "bun run build"
+  },
+  "dependencies": {
+    "@entry-mergy/common-utils": "workspace:*",
+    "@entry-mergy/core": "workspace:*",
+    "@entry-mergy/entry-utils": "workspace:*"
+  }
+}

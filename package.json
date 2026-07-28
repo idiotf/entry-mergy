@@ -1,0 +1,9 @@
+{
+  "workspaces": [
+    "./packages/*",
+    "./apps/*"
+  ],
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}
