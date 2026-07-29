@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useCallback, useEffect } from 'react'
+import { Suspense, useCallback, useEffect, useReducer } from 'react'
 import Image from 'next/image'
 import { FileIcon, PlusIcon, XIcon } from 'lucide-react'
 import { observer } from 'mobx-react-lite'
@@ -27,6 +27,7 @@ import { Skeleton } from '../ui/skeleton'
 import { FileButtonWithLabel } from '../ui/file-button'
 import { Input } from '../ui/input'
 import { Button } from '../ui/button'
+import { EntryIcon } from '../icons/entry'
 
 function ErrorComp() {
   return <ErrorMessage>오류 발생</ErrorMessage>
@@ -45,6 +46,8 @@ interface ProjectItemProps {
 const ProjectItem = observer(({ projects, i, onRemove }: ProjectItemProps) => {
   const project = projects.projects[i]!
 
+  const [thumbError, setThumbError] = useReducer(() => true, false)
+
   const removeProject = useCallback(() => {
     projects.removeProject(i)
     onRemove?.()
@@ -55,16 +58,19 @@ const ProjectItem = observer(({ projects, i, onRemove }: ProjectItemProps) => {
       <AttachmentMedia
         variant={project.source.metadata.thumbUrl ? 'image' : 'icon'}
       >
-        {project.source.metadata.thumbUrl ? (
+        {project.source.metadata.thumbUrl && !thumbError ? (
           <Image
             src={project.source.metadata.thumbUrl}
             alt=''
             width={640}
             height={360}
             unoptimized
+            onError={setThumbError}
           />
+        ) : project.source.type == 'file' ? (
+          <FileIcon />
         ) : (
-          project.source.type == 'file' && <FileIcon />
+          <EntryIcon />
         )}
       </AttachmentMedia>
       <AttachmentContent>
@@ -174,6 +180,7 @@ export function ProjectList({ projects, onChange }: ProjectListProps) {
     <>
       <form
         action={handleFormAction}
+        noValidate
         className='flex items-center gap-2 max-[550px]:flex-col'
       >
         <FileButtonWithLabel
@@ -186,6 +193,7 @@ export function ProjectList({ projects, onChange }: ProjectListProps) {
         <span className='whitespace-nowrap max-[550px]:hidden'>또는</span>
         <div className='flex w-full flex-1 gap-2'>
           <Input
+            type='url'
             name='project-url'
             placeholder='playentry.org/project/*** or naver.me/***'
             autoComplete='off'

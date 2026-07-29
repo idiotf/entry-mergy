@@ -1,19 +1,18 @@
 'use client'
 
+import Image from 'next/image'
 import { useCallback, useState } from 'react'
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, ImageIcon, Music4Icon } from 'lucide-react'
 import { observer } from 'mobx-react-lite'
 import { cn } from '@/lib/utils'
 import { LoadableButton } from '@/components/ui/loadable-button'
 import { ErrorMessage } from '@/components/ui/error-message'
-import { mergeAllAsync, type MergeOptions } from '@entry-mergy/core'
 import {
-  mergeAllKineticAsync,
-  type KineticMergeOptions,
-} from '@entry-mergy/kinetic'
-import type { MergeUIOptionsStore } from '@/stores/merge-options'
-import { z } from 'zod/mini'
-import { exportProjectToOffline } from '@entry-mergy/offline-project-loader'
+  mergeProjectsToOffline,
+  OptionError,
+  type MergeMode,
+  type MergeUIOptionsStore,
+} from '@/stores/merge-options'
 import { downloadBlob } from '@/utils/download'
 import { Button } from '../ui/button'
 import {
@@ -22,61 +21,141 @@ import {
   CollapsibleTrigger,
 } from '../ui/collapsible'
 import { ProjectList } from './project-list'
-import { FormProvider, useForm, useFormContext } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-
-const coreOptionsSchema = z.object({
-  preserveVar: z.optional(z.array(z.string())),
-  shareFunctions: z.optional(z.boolean()),
-}) satisfies z.ZodMiniType<MergeOptions>
-
-const kineticOptionsSchema = z.object({
-  timestamps: z.array(z.number()),
-  thumbnail: z.object({
-    url: z.string(),
-    format: z.string(),
-    width: z.number(),
-    height: z.number(),
-  }),
-  bgm: z.object({
-    url: z.string(),
-    format: z.string(),
-    duration: z.number(),
-  }),
-  coreOptions: z.optional(coreOptionsSchema),
-  timestampGap: z.optional(z.number()),
-  waitForBGM: z.optional(
-    z.union([
-      z.boolean(),
-      z.object({
-        useCache: z.optional(z.boolean()),
-      }),
-    ])
-  ),
-  memos: z.optional(z.array(z.string())),
-}) satisfies z.ZodMiniType<KineticMergeOptions>
-
-type MergeOptionsWithMode = z.infer<typeof optionsSchema>
-const optionsSchema = z.union([
-  z.object({
-    mergeMode: z.literal('core'),
-    coreOptions: coreOptionsSchema,
-  }),
-  z.object({
-    mergeMode: z.literal('kinetic'),
-    ...kineticOptionsSchema.shape,
-  }),
-])
+import { Field, FieldError, FieldGroup, FieldLabel } from '../ui/field'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../ui/select'
+import { FileSelectZone } from '../ui/file-button'
+import { NumberInput } from '../ui/number-input'
+import { Switch } from '../ui/switch'
 
 interface ProjectOptionsUIProps {
   options: MergeUIOptionsStore
+  error?: OptionError | undefined
 }
 
-const ProjectOptionsUI = observer(({ options }: ProjectOptionsUIProps) => {
-  const form = useFormContext<KineticMergeOptions>()
+const ProjectOptionsUI = observer(
+  ({ options, error }: ProjectOptionsUIProps) => {
+    const setMergeMode = useCallback(
+      (mode: MergeMode) => {
+        options.setMergeMode(mode)
+      },
+      [options]
+    )
 
-  return <>TODO</>
-})
+    const setThumbnail = useCallback(
+      (files: FileList) => {
+        const file = files[0]
+        if (!file) return
+
+        return options.setThumbnail(file)
+      },
+      [options]
+    )
+
+    const setBGM = useCallback(
+      (files: FileList) => {
+        const file = files[0]
+        if (!file) return
+
+        return options.setBGM(file)
+      },
+      [options]
+    )
+
+    const setTimestampGap = useCallback((value?: number) => {
+      options.setTimestampGap(value)
+    }, [options])
+
+    const setWaitForBGM = useCallback((value: boolean) => {
+      options.setWaitForBGM(value)
+    }, [options])
+
+    const setUseBGMCache = useCallback((value: boolean) => {
+      options.setWaitForBGM(true, value)
+    }, [options])
+
+    return (
+      <FieldGroup className='mt-2'>
+        <Field>
+          <FieldLabel htmlFor='mergeMode'>병합 모드</FieldLabel>
+          <Select value={options.mergeMode} onValueChange={setMergeMode}>
+            <SelectTrigger id='mergeMode' className='w-45'>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value='core'>일반</SelectItem>
+                <SelectItem value='kinetic'>타이포그래피</SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </Field>
+        {options.mergeMode == 'kinetic' && (
+          <>
+            <Field data-invalid={error?.type == 'mustSelectThumbnail'}>
+              <FieldLabel htmlFor='thumbnail'>썸네일</FieldLabel>
+              <FileSelectZone
+                id='thumbnail'
+                selected={!!options.thumbnail}
+                onFileSelect={setThumbnail}
+              >
+                {options.thumbnail ? (
+                  <Image
+                    src={options.thumbnail.blobUrl}
+                    alt=''
+                    width={960}
+                    height={540}
+                    unoptimized
+                  />
+                ) : (
+                  <>
+                    <ImageIcon />
+                    이미지를 드롭하거나 선택
+                  </>
+                )}
+              </FileSelectZone>
+              {error?.type == 'mustSelectThumbnail' && (
+                <FieldError>{error.message}</FieldError>
+              )}
+            </Field>
+            <Field data-invalid={error?.type == 'mustSelectBGM'}>
+              <FieldLabel htmlFor='bgm'>BGM</FieldLabel>
+              <FileSelectZone
+                id='bgm'
+                selected={!!options.bgm}
+                onFileSelect={setBGM}
+              >
+                <Music4Icon />
+                BGM을 드롭하거나 선택
+              </FileSelectZone>
+              {error?.type == 'mustSelectBGM' && (
+                <FieldError>{error.message}</FieldError>
+              )}
+            </Field>
+            <Field>
+              <FieldLabel htmlFor='waitForBGM'>BGM 로딩 기다리기</FieldLabel>
+              <Switch checked={options.waitForBGM} onCheckedChange={setWaitForBGM} className='float-left' />
+            </Field>
+            <Field data-disabled={!options.waitForBGM}>
+              <FieldLabel htmlFor='useBGMCache'>BGM 로딩 캐시 사용</FieldLabel>
+              <Switch checked={options.useBGMCache} disabled={!options.waitForBGM} onCheckedChange={setUseBGMCache} />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor='timestampGap'>타임스탬프 사이 간격</FieldLabel>
+              <NumberInput id='timestampGap' value={options.timestampGap} min={0} step='any' onValueChange={setTimestampGap} />
+            </Field>
+          </>
+        )}
+      </FieldGroup>
+    )
+  }
+)
 
 export interface ProjectMergeUIProps extends React.ComponentProps<'div'> {
   options: MergeUIOptionsStore
@@ -88,62 +167,28 @@ export const ProjectMergeUI = observer((props: ProjectMergeUIProps) => {
   const [merging, setMerging] = useState(false)
   const [error, setError] = useState('')
 
-  const mergeSelectedProjects = useCallback(
-    (resolvedOptions: MergeOptionsWithMode) => {
-      const projects = options.projects.map((v, i) =>
-        v.project.catch((e) => {
-          console.error(e)
-          throw `${i + 1}번째 작품을 불러오는 중 오류가 발생했습니다.`
-        })
-      )
-      const { mergeMode, coreOptions } = resolvedOptions
-
-      switch (mergeMode) {
-        case 'core':
-          return mergeAllAsync(projects, coreOptions)
-
-        case 'kinetic':
-          return mergeAllKineticAsync(projects, resolvedOptions)
-      }
-    },
-    [options]
-  )
-
-  const startMerge = useCallback(
-    async (options: MergeOptionsWithMode) => {
-      setMerging(true)
-      setError('')
-
-      try {
-        const merged = await mergeSelectedProjects(options)
-        const tar = exportProjectToOffline(merged)
-        const tgz = tar.pipeThrough(new CompressionStream('gzip'))
-        downloadBlob(await new Response(tgz).blob(), 'output.ent')
-      } catch (e) {
-        console.error(e)
-        setError(String(e))
-      }
-
-      setMerging(false)
-    },
-    [mergeSelectedProjects]
-  )
+  const [optionError, setOptionError] = useState<OptionError>()
 
   const handleChangeProjectList = useCallback((error?: string) => {
     setError(error || '')
   }, [])
 
-  const form = useForm<MergeOptionsWithMode>({
-    resolver: zodResolver(optionsSchema),
-    defaultValues: options,
-  })
+  const startMerge = useCallback(async () => {
+    setMerging(true)
+    setOptionError(undefined)
+    setError('')
 
-  const onSubmit = useCallback(
-    (options: MergeOptionsWithMode) => {
-      return startMerge(options)
-    },
-    [startMerge]
-  )
+    try {
+      const output = await mergeProjectsToOffline(options)
+      downloadBlob(await new Response(output).blob(), 'output.ent')
+    } catch (e) {
+      if (e instanceof OptionError) return setOptionError(e)
+      console.error(e)
+      setError(String(e))
+    } finally {
+      setMerging(false)
+    }
+  }, [options])
 
   return (
     <div {...rest} className={cn('space-y-2 pt-2 pb-4', className)}>
@@ -152,33 +197,28 @@ export const ProjectMergeUI = observer((props: ProjectMergeUIProps) => {
         onChange={handleChangeProjectList}
       />
       <Collapsible>
-        <FormProvider {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
-            <div className='flex gap-2'>
-              <CollapsibleTrigger asChild>
-                <Button
-                  type='button'
-                  variant='ghost'
-                  className='[&[data-state=open]>*]:rotate-90'
-                >
-                  <ChevronRight className='transition-transform duration-75 ease-out' />
-                  기타 설정
-                </Button>
-              </CollapsibleTrigger>
-              <div className='flex items-stretch gap-2'>
-                {options.projects.length > 0 && (
-                  <LoadableButton type='submit' loading={merging}>
-                    병합
-                  </LoadableButton>
-                )}
-                {error && <ErrorMessage>{error}</ErrorMessage>}
-              </div>
-            </div>
-            <CollapsibleContent>
-              <ProjectOptionsUI options={options} />
-            </CollapsibleContent>
-          </form>
-        </FormProvider>
+        <div className='flex gap-2'>
+          <CollapsibleTrigger asChild>
+            <Button
+              variant='ghost'
+              className='[&[data-state=open]>*]:rotate-90'
+            >
+              <ChevronRight className='transition-transform duration-75 ease-out' />
+              기타 설정
+            </Button>
+          </CollapsibleTrigger>
+          <div className='flex items-stretch gap-2'>
+            {options.projects.length > 0 && (
+              <LoadableButton onClick={startMerge} loading={merging}>
+                병합
+              </LoadableButton>
+            )}
+            {error && <ErrorMessage>{error}</ErrorMessage>}
+          </div>
+        </div>
+        <CollapsibleContent>
+          <ProjectOptionsUI options={options} error={optionError} />
+        </CollapsibleContent>
       </Collapsible>
     </div>
   )

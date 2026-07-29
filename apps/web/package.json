@@ -12,15 +12,14 @@
     "ui": "shadcn add"
   },
   "dependencies": {
-    "@entry-mergy/common-utils": "workspace:*",
     "@entry-mergy/core": "workspace:*",
     "@entry-mergy/entry-api-client": "workspace:*",
     "@entry-mergy/entry-utils": "workspace:*",
     "@entry-mergy/kinetic": "workspace:*",
+    "@entry-mergy/media-metadata": "workspace:*",
     "@entry-mergy/offline-project-loader": "workspace:*",
     "@entry-mergy/project-loader-types": "workspace:*",
     "@entry-mergy/web-project-loader": "workspace:*",
-    "@hookform/resolvers": "^5.5.7",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.25.0",
@@ -32,7 +31,6 @@
     "radix-ui": "^1.6.4",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "react-hook-form": "^7.83.0",
     "shadcn": "^4.16.0",
     "tailwind-merge": "^3.6.0",
     "zod": "^4.4.3"

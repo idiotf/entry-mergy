@@ -45,7 +45,8 @@ import type {
   WaitForBGMOptions,
 } from './types'
 
-export { ProjectJSON as Project, type KineticMergeOptions }
+export { ProjectJSON as Project }
+export * from './types'
 
 // #region Base Project
 

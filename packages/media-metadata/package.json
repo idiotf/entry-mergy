@@ -1,5 +1,5 @@
 {
-  "name": "@entry-mergy/offline-project-loader",
+  "name": "@entry-mergy/media-metadata",
   "version": "0.0.1",
   "type": "module",
   "files": ["dist"],
@@ -11,8 +11,6 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^26.1.1",
-    "@types/tar-js": "^0.3.5",
-    "@types/tar-stream": "^3.1.4",
     "eslint": "^10.5.0",
     "globals": "^17.6.0",
     "jiti": "^2.7.0",
@@ -31,13 +29,5 @@
     "build": "tsdown --publint",
     "watch": "bun run build --watch",
     "prepack": "bun run build"
-  },
-  "dependencies": {
-    "@entry-mergy/common-utils": "workspace:*",
-    "@entry-mergy/entry-utils": "workspace:*",
-    "@entry-mergy/project-loader-types": "workspace:*",
-    "@entry-mergy/stream-utils": "workspace:*",
-    "tar-js": "^0.3.0",
-    "tar-stream": "^3.2.0"
   }
 }

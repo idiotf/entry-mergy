@@ -8,4 +8,7 @@ const nextConfig: NextConfig = {
   },
 }
 
+const allowedDevOrigins = process.env.ALLOWED_DEV_ORIGINS?.split(';')
+if (allowedDevOrigins) nextConfig.allowedDevOrigins = allowedDevOrigins
+
 export default nextConfig

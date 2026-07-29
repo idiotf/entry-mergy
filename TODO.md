@@ -9,5 +9,5 @@
 ## offline-project-loader
 
 - `exportProjectToOffline` 함수 마저 구현
-  - `assets` 타입을 `AsyncIterable<Asset>`로 변경
+- `importProjectFromOffline` 함수 마저 구현
   - `cancelProject`, `cancelAssets` 추가
