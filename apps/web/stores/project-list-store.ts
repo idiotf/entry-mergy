@@ -1,5 +1,6 @@
 import { makeAutoObservable, runInAction } from 'mobx'
 import { importProjectFromOffline } from '@entry-mergy/offline-project-loader'
+import { ListStore } from './list-store'
 import type { Project } from '@entry-mergy/core'
 import type { Asset, ImportedProject } from '@entry-mergy/project-loader-types'
 import type { ProjectLinkIncludeShorten } from '@entry-mergy/web-project-loader/utils'
@@ -141,10 +142,6 @@ export class ProjectMetadata {
   }
 }
 
-function swap<T>(obj: T, i: keyof T, j: keyof T) {
-  ;[obj[i], obj[j]] = [obj[j], obj[i]]
-}
-
 async function getOriginOfProjectAsync(projectPromise: Promise<Project>) {
   const project = await projectPromise
   return 'parent' in project && project.parent !== null
@@ -256,18 +253,20 @@ function loadProjectsByFile<const T extends File[]>(files: T) {
 }
 
 export class ProjectListStore {
-  projects: ProjectState[] = []
-
-  constructor() {
+  constructor(public projectsStore = new ListStore<ProjectState>()) {
     makeAutoObservable(this)
   }
 
+  get projects() {
+    return this.projectsStore.values
+  }
+
   addProjectByLink(links: ProjectLinkIncludeShorten[]) {
-    this.projects.push(...loadProjectsByLink(links))
+    this.projectsStore.add(...loadProjectsByLink(links))
   }
 
   addProjectByFile(files: File[]) {
-    this.projects.push(...loadProjectsByFile(files))
+    this.projectsStore.add(...loadProjectsByFile(files))
   }
 
   reloadProject(i: number) {
@@ -276,14 +275,10 @@ export class ProjectListStore {
       type == 'file'
         ? loadProjectsByFile([origin])
         : loadProjectsByLink([origin])
-    this.projects[i] = project
+    this.projectsStore.set(i, project)
   }
 
   removeProject(i: number) {
-    this.projects.splice(i, 1)
-  }
-
-  swapProject(i: number, j: number) {
-    swap(this.projects, i, j)
+    this.projectsStore.remove(i)
   }
 }

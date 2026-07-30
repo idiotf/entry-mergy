@@ -21,13 +21,15 @@ import {
   getProjectLinksIncludeShorten,
   type ProjectLinkIncludeShorten,
 } from '@entry-mergy/web-project-loader/utils'
-import { useKeyStore } from '@/hooks/use-key-manager'
 import type { ProjectListStore } from '@/stores/project-list-store'
 import { Skeleton } from '../ui/skeleton'
 import { FileButtonWithLabel } from '../ui/file-button'
 import { Input } from '../ui/input'
 import { Button } from '../ui/button'
 import { EntryIcon } from '../icons/entry'
+import { useSortable } from '@dnd-kit/react/sortable'
+import { DragDropProvider, type DragEndEvent } from '@dnd-kit/react'
+import { move } from '@dnd-kit/helpers'
 
 function ErrorComp() {
   return <ErrorMessage>오류 발생</ErrorMessage>
@@ -38,12 +40,13 @@ function LoadingComp() {
 }
 
 interface ProjectItemProps {
+  id: number
   projects: ProjectListStore
   i: number
   onRemove?: (() => void) | undefined
 }
 
-const ProjectItem = observer(({ projects, i, onRemove }: ProjectItemProps) => {
+const ProjectItem = observer(({ id, projects, i, onRemove }: ProjectItemProps) => {
   const project = projects.projects[i]!
   const hasError = !!project.error
   const thumbUrl = project.source.metadata.thumbUrl
@@ -59,11 +62,12 @@ const ProjectItem = observer(({ projects, i, onRemove }: ProjectItemProps) => {
     onRemove?.()
   }, [projects, i, onRemove])
 
+  const { ref, handleRef } = useSortable({ id, index: i })
   const AttachmentIcon = project.source.type == 'file' ? FileIcon : EntryIcon
 
   return (
-    <Attachment state={hasError ? 'error' : 'done'} className='w-full'>
-      <AttachmentMedia variant={thumbUrl ? 'image' : 'icon'}>
+    <Attachment ref={ref} state={hasError ? 'error' : 'done'} className='w-full'>
+      <AttachmentMedia ref={handleRef} variant={thumbUrl ? 'image' : 'icon'} className='cursor-grab'>
         {thumbUrl && !thumbError ? (
           <Image
             src={thumbUrl}
@@ -112,9 +116,7 @@ export interface ProjectListProps {
   onChange?: (error?: string) => void
 }
 
-export function ProjectList({ projects, onChange }: ProjectListProps) {
-  const key = useKeyStore()
-
+export const ProjectList = observer(({ projects, onChange }: ProjectListProps) => {
   const addProjectByLink = useCallback(
     (links: ProjectLinkIncludeShorten[]) => {
       if (!links.length) return onChange?.('올바른 작품 URL을 입력해주세요.')
@@ -185,6 +187,11 @@ export function ProjectList({ projects, onChange }: ProjectListProps) {
     [addProjectByLink]
   )
 
+  const reorderProjects = useCallback((event: DragEndEvent) => {
+    const reorderedKeys = move(projects.projectsStore.keys, event)
+    projects.projectsStore.setOrder(reorderedKeys)
+  }, [projects])
+
   return (
     <>
       <form
@@ -212,14 +219,17 @@ export function ProjectList({ projects, onChange }: ProjectListProps) {
           </Button>
         </div>
       </form>
-      {projects.projects.map((project, i) => (
-        <ProjectItem
-          key={key(project)}
-          projects={projects}
-          i={i}
-          onRemove={onChange}
-        />
-      ))}
+      <DragDropProvider onDragEnd={reorderProjects}>
+        {projects.projectsStore.items.map(({ key }, i) => (
+          <ProjectItem
+            key={key}
+            id={key}
+            projects={projects}
+            i={i}
+            onRemove={onChange}
+          />
+        ))}
+      </DragDropProvider>
     </>
   )
-}
+})
