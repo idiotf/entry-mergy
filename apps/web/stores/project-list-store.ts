@@ -34,23 +34,39 @@ export class ProjectState {
   }
 }
 
+export interface LinkProjectOrigin {
+  type: 'url' | 'auto'
+  origin: ProjectLinkIncludeShorten
+}
+
+export interface FileProjectOrigin {
+  type: 'file'
+  origin: File
+}
+
+export type ProjectOrigin = LinkProjectOrigin | FileProjectOrigin
+
 export interface ProjectSourceInit {
-  type: 'url' | 'file' | 'auto'
+  origin: ProjectOrigin
   label: string
   metadata: ProjectMetadata
 }
 
 export class ProjectSource {
-  type: 'url' | 'file' | 'auto'
+  origin: ProjectOrigin
   label: string
   metadata: ProjectMetadata
 
   constructor(init: ProjectSourceInit) {
-    this.type = init.type
+    this.origin = init.origin
     this.label = init.label
     this.metadata = init.metadata
 
     makeAutoObservable(this)
+  }
+
+  get type() {
+    return this.origin.type
   }
 
   setFromLoadingProject(
@@ -157,7 +173,13 @@ interface ImportedProjectWithId extends ImportedProject {
   id: MaybePromise<string>
 }
 
-function importProjectFromWeb(id: readonly ProjectId[]) {
+const tupleMap = <const T extends readonly unknown[], U>(
+  arr: T,
+  fn: <I extends keyof T & number>(value: T[I], index: I) => U
+) =>
+  arr.map(fn) as { [K in keyof T]: U }
+
+function importProjectFromWeb<const T extends readonly ProjectId[]>(id: T) {
   const idParam = id
     .map((id) => (typeof id == 'string' ? id : `${id[0]}:${id[1]}`))
     .join(',')
@@ -165,7 +187,7 @@ function importProjectFromWeb(id: readonly ProjectId[]) {
     `/api/project/${idParam}`
   ).then((res) => res.json())
 
-  return id.map((id, i): ImportedProjectWithId => {
+  return tupleMap(id, (id, i): ImportedProjectWithId => {
     const project = projects.then((projects) => projects[i])
     return {
       id:
@@ -189,6 +211,53 @@ function importProjectFromWeb(id: readonly ProjectId[]) {
 const projectNameRegex = /^작품 - (.+) : 엔트리$/
 const entExtensionRegex = /\.ent$/i
 
+function loadProjectsByLink<const T extends ProjectLinkIncludeShorten[]>(links: T) {
+  const loadedProjects = importProjectFromWeb(tupleMap(links, (v) => v.id))
+
+  const loadedProjectStates = tupleMap(
+    links,
+    (link, i): ProjectState => {
+      const { type, id, url, name } = link
+      const { id: resolvedId, project, assets } = loadedProjects[i]
+
+      const source = new ProjectSource({
+        origin: { type: 'url', origin: link },
+        label: url,
+        metadata: new ProjectMetadata(
+          name?.match(projectNameRegex)?.[1] ||
+            getNameOfProjectAsync(project),
+          type == 'shorten' ? undefined : getThumbUrl(id)
+        ),
+      })
+      source.setFromLoadingProject(
+        project,
+        type == 'shorten' ? resolvedId : undefined
+      )
+
+      return new ProjectState({ source, project, assets })
+    }
+  )
+
+  return loadedProjectStates
+}
+
+function loadProjectsByFile<const T extends File[]>(files: T) {
+  const loadedProjectStates = tupleMap(files, (file): ProjectState => {
+    const { project, assets } = importProjectFromOffline(file.stream())
+
+    const source = new ProjectSource({
+      origin: { type: 'file', origin: file },
+      label: file.name,
+      metadata: new ProjectMetadata(file.name.replace(entExtensionRegex, '')),
+    })
+    source.setFromLoadingProject(project)
+
+    return new ProjectState({ source, project, assets })
+  })
+
+  return loadedProjectStates
+}
+
 export class ProjectListStore {
   projects: ProjectState[] = []
 
@@ -197,48 +266,17 @@ export class ProjectListStore {
   }
 
   addProjectByLink(links: ProjectLinkIncludeShorten[]) {
-    const loadedProjects = importProjectFromWeb(links.map((v) => v.id))
-
-    const loadedProjectStates = links.map(
-      ({ type, id, url, name }, i): ProjectState => {
-        const { id: resolvedId, project, assets } = loadedProjects[i]!
-
-        const source = new ProjectSource({
-          type: 'url',
-          label: url,
-          metadata: new ProjectMetadata(
-            name?.match(projectNameRegex)?.[1] ||
-              getNameOfProjectAsync(project),
-            type == 'shorten' ? undefined : getThumbUrl(id)
-          ),
-        })
-        source.setFromLoadingProject(
-          project,
-          type == 'shorten' ? resolvedId : undefined
-        )
-
-        return new ProjectState({ source, project, assets })
-      }
-    )
-
-    this.projects.push(...loadedProjectStates)
+    this.projects.push(...loadProjectsByLink(links))
   }
 
   addProjectByFile(files: File[]) {
-    const loadedProjectStates = files.map((file): ProjectState => {
-      const { project, assets } = importProjectFromOffline(file.stream())
+    this.projects.push(...loadProjectsByFile(files))
+  }
 
-      const source = new ProjectSource({
-        type: 'file',
-        label: file.name,
-        metadata: new ProjectMetadata(file.name.replace(entExtensionRegex, '')),
-      })
-      source.setFromLoadingProject(project)
-
-      return new ProjectState({ source, project, assets })
-    })
-
-    this.projects.push(...loadedProjectStates)
+  reloadProject(i: number) {
+    const { type, origin } = this.projects[i]!.source.origin
+    const [project] = type == 'file' ? loadProjectsByFile([origin]) : loadProjectsByLink([origin])
+    this.projects[i] = project
   }
 
   removeProject(i: number) {

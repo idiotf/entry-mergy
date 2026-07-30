@@ -33,6 +33,7 @@ import {
 import { FileSelectZone } from '../ui/file-button'
 import { NumberInput } from '../ui/number-input'
 import { Switch } from '../ui/switch'
+import { ListInput } from '../ui/list-input'
 
 interface ProjectOptionsUIProps {
   options: MergeUIOptionsStore
@@ -80,6 +81,10 @@ const ProjectOptionsUI = observer(
       options.setWaitForBGM(true, value)
     }, [options])
 
+    const setShareFunctions = useCallback((value: boolean) => {
+      options.coreOptions.setShareFunctions(value)
+    }, [options])
+
     return (
       <FieldGroup className='mt-2'>
         <Field>
@@ -102,6 +107,7 @@ const ProjectOptionsUI = observer(
               <FieldLabel htmlFor='thumbnail'>썸네일</FieldLabel>
               <FileSelectZone
                 id='thumbnail'
+                accept={['image/*']}
                 selected={!!options.thumbnail}
                 onFileSelect={setThumbnail}
               >
@@ -128,6 +134,7 @@ const ProjectOptionsUI = observer(
               <FieldLabel htmlFor='bgm'>BGM</FieldLabel>
               <FileSelectZone
                 id='bgm'
+                accept={['audio/*']}
                 selected={!!options.bgm}
                 onFileSelect={setBGM}
               >
@@ -140,11 +147,11 @@ const ProjectOptionsUI = observer(
             </Field>
             <Field>
               <FieldLabel htmlFor='waitForBGM'>BGM 로딩 기다리기</FieldLabel>
-              <Switch checked={options.waitForBGM} onCheckedChange={setWaitForBGM} className='float-left' />
+              <Switch id='waitForBGM' checked={options.waitForBGM} onCheckedChange={setWaitForBGM} className='float-left' />
             </Field>
             <Field data-disabled={!options.waitForBGM}>
               <FieldLabel htmlFor='useBGMCache'>BGM 로딩 캐시 사용</FieldLabel>
-              <Switch checked={options.useBGMCache} disabled={!options.waitForBGM} onCheckedChange={setUseBGMCache} />
+              <Switch id='useBGMCache' checked={options.useBGMCache} disabled={!options.waitForBGM} onCheckedChange={setUseBGMCache} />
             </Field>
             <Field>
               <FieldLabel htmlFor='timestampGap'>타임스탬프 사이 간격</FieldLabel>
@@ -152,6 +159,14 @@ const ProjectOptionsUI = observer(
             </Field>
           </>
         )}
+        <Field>
+          <FieldLabel>작품 간 공유할 변수·리스트</FieldLabel>
+          <ListInput store={options.coreOptions.preserveVar} />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor='shareFunctions'>작품 간 함수 공유</FieldLabel>
+          <Switch id='shareFunctions' checked={options.coreOptions.shareFunctions} onCheckedChange={setShareFunctions} />
+        </Field>
       </FieldGroup>
     )
   }

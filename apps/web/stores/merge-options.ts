@@ -9,6 +9,7 @@ import {
 } from '@entry-mergy/offline-project-loader'
 import { mergeAllAsync, type MergeOptions } from '@entry-mergy/core'
 import { mergeAllKineticAsync } from '@entry-mergy/kinetic'
+import { ListStore } from './list-store'
 import {
   getAudioDurationViaURL,
   getImageSizeViaURL,
@@ -19,20 +20,33 @@ import type { Project } from '@entry-mergy/entry-utils/types'
 
 export type MergeMode = 'core' | 'kinetic'
 
+export class MergeUICoreOptions {
+  preserveVar = new ListStore<string>()
+  shareFunctions = false
+
+  constructor() {
+    makeAutoObservable(this)
+  }
+
+  setShareFunctions(shareFunctions: boolean) {
+    this.shareFunctions = shareFunctions
+  }
+}
+
 interface WithData {
   file: File
   blobUrl: string
   data: ReadableStream<Uint8Array<ArrayBuffer>>
 }
 
-interface ThumbnailWithData extends WithData {
+export interface ThumbnailWithData extends WithData {
   assetPath: string
   format: string
   width: Promise<number>
   height: Promise<number>
 }
 
-interface BGMWithData extends WithData {
+export interface BGMWithData extends WithData {
   assetPath: string
   format: string
   duration: Promise<number>
@@ -40,10 +54,7 @@ interface BGMWithData extends WithData {
 
 export class MergeUIOptionsStore {
   mergeMode: MergeMode = 'core'
-  coreOptions: MergeOptions = {
-    preserveVar: [],
-    shareFunctions: false,
-  }
+  coreOptions = new MergeUICoreOptions()
 
   protected timestampsMap = new WeakMap<ProjectState, number>()
   thumbnail?: ThumbnailWithData | undefined
@@ -214,11 +225,18 @@ function mergeSelectedProjects(
   }
 }
 
+function resolveCoreOptions(options: MergeUICoreOptions): MergeOptions {
+  return {
+    ...options,
+    preserveVar: options.preserveVar.items.map((v) => v.value),
+  }
+}
+
 function mergeProjectsViaCore(
   projects: Promise<Project>[],
   options: MergeUIOptionsStore
 ) {
-  return mergeAllAsync(projects, options.coreOptions)
+  return mergeAllAsync(projects, resolveCoreOptions(options.coreOptions))
 }
 
 async function mergeProjectsViaKinetic(
@@ -234,6 +252,8 @@ async function mergeProjectsViaKinetic(
   if (!options.thumbnail) throw new OptionError('mustSelectThumbnail')
   if (!options.bgm) throw new OptionError('mustSelectBGM')
 
+  const timestamps = options.timestamps as number[]
+
   const thumbnail = {
     url: options.thumbnail.assetPath,
     format: options.thumbnail.format,
@@ -247,16 +267,18 @@ async function mergeProjectsViaKinetic(
     duration: await options.bgm.duration,
   }
 
+  const coreOptions = resolveCoreOptions(options.coreOptions)
+
   const waitForBGM =
     options.waitForBGM
       ? { useCache: options.useBGMCache }
       : false
 
   const resolvedOptions = {
-    timestamps: options.timestamps as number[],
+    timestamps,
     thumbnail,
     bgm,
-    coreOptions: options.coreOptions,
+    coreOptions,
     timestampGap: options.timestampGap,
     waitForBGM,
     memos: options.memos,

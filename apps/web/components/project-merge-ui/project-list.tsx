@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useReducer } from 'react'
 import Image from 'next/image'
-import { FileIcon, PlusIcon, XIcon } from 'lucide-react'
+import { FileIcon, PlusIcon, RefreshCw, XIcon } from 'lucide-react'
 import { observer } from 'mobx-react-lite'
 import { preventDefault } from '@/utils/prevent-default'
 import { ErrorBoundary } from '@/components/error-boundary'
@@ -43,53 +43,65 @@ interface ProjectItemProps {
   onRemove?: (() => void) | undefined
 }
 
-const ProjectItem = observer(({ projects, i, onRemove }: ProjectItemProps) => {
+const ProjectItem = observer(({
+  projects,
+  i,
+  onRemove
+}: ProjectItemProps) => {
   const project = projects.projects[i]!
+  const hasError = !!project.error
+  const thumbUrl = project.source.metadata.thumbUrl
 
   const [thumbError, setThumbError] = useReducer(() => true, false)
+
+  const reloadProject = useCallback(() => {
+    projects.reloadProject(i)
+  }, [projects, i])
 
   const removeProject = useCallback(() => {
     projects.removeProject(i)
     onRemove?.()
   }, [projects, i, onRemove])
 
+  const AttachmentIcon = project.source.type == 'file' ? FileIcon : EntryIcon
+
   return (
-    <Attachment state={project.error ? 'error' : 'done'} className='w-full'>
-      <AttachmentMedia
-        variant={project.source.metadata.thumbUrl ? 'image' : 'icon'}
-      >
-        {project.source.metadata.thumbUrl && !thumbError ? (
+    <Attachment state={hasError ? 'error' : 'done'} className='w-full'>
+      <AttachmentMedia variant={thumbUrl ? 'image' : 'icon'}>
+        {thumbUrl && !thumbError ? (
           <Image
-            src={project.source.metadata.thumbUrl}
+            src={thumbUrl}
             alt=''
             width={640}
             height={360}
             unoptimized
             onError={setThumbError}
           />
-        ) : project.source.type == 'file' ? (
-          <FileIcon />
         ) : (
-          <EntryIcon />
+          <AttachmentIcon />
         )}
       </AttachmentMedia>
       <AttachmentContent>
         <AttachmentTitle className='h-[--spacing(4.375)]'>
           <ErrorBoundary errorComponent={ErrorComp}>
             <Suspense fallback={<LoadingComp />}>
-              {project.error ? (
-                <ErrorMessage>{project.source.metadata.name}</ErrorMessage>
-              ) : (
-                project.source.metadata.name
-              )}
+              {project.source.metadata.name}
             </Suspense>
           </ErrorBoundary>
         </AttachmentTitle>
         <AttachmentDescription>
+          {hasError && (
+            <>작품을 불러오지 못했습니다. · </>
+          )}
           <Suspense fallback={<LoadingComp />}>{project.source.label}</Suspense>
         </AttachmentDescription>
       </AttachmentContent>
       <AttachmentActions>
+        {hasError && (
+          <AttachmentAction aria-label='작품 다시 불러오기' onClick={reloadProject}>
+            <RefreshCw />
+          </AttachmentAction>
+        )}
         <AttachmentAction aria-label='이 작품 제거' onClick={removeProject}>
           <XIcon />
         </AttachmentAction>
