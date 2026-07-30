@@ -43,11 +43,7 @@ interface ProjectItemProps {
   onRemove?: (() => void) | undefined
 }
 
-const ProjectItem = observer(({
-  projects,
-  i,
-  onRemove
-}: ProjectItemProps) => {
+const ProjectItem = observer(({ projects, i, onRemove }: ProjectItemProps) => {
   const project = projects.projects[i]!
   const hasError = !!project.error
   const thumbUrl = project.source.metadata.thumbUrl
@@ -90,15 +86,16 @@ const ProjectItem = observer(({
           </ErrorBoundary>
         </AttachmentTitle>
         <AttachmentDescription>
-          {hasError && (
-            <>작품을 불러오지 못했습니다. · </>
-          )}
+          {hasError && <>작품을 불러오지 못했습니다. · </>}
           <Suspense fallback={<LoadingComp />}>{project.source.label}</Suspense>
         </AttachmentDescription>
       </AttachmentContent>
       <AttachmentActions>
         {hasError && (
-          <AttachmentAction aria-label='작품 다시 불러오기' onClick={reloadProject}>
+          <AttachmentAction
+            aria-label='작품 다시 불러오기'
+            onClick={reloadProject}
+          >
             <RefreshCw />
           </AttachmentAction>
         )}

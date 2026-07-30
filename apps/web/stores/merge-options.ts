@@ -269,10 +269,9 @@ async function mergeProjectsViaKinetic(
 
   const coreOptions = resolveCoreOptions(options.coreOptions)
 
-  const waitForBGM =
-    options.waitForBGM
-      ? { useCache: options.useBGMCache }
-      : false
+  const waitForBGM = options.waitForBGM
+    ? { useCache: options.useBGMCache }
+    : false
 
   const resolvedOptions = {
     timestamps,

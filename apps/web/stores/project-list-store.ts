@@ -176,8 +176,7 @@ interface ImportedProjectWithId extends ImportedProject {
 const tupleMap = <const T extends readonly unknown[], U>(
   arr: T,
   fn: <I extends keyof T & number>(value: T[I], index: I) => U
-) =>
-  arr.map(fn) as { [K in keyof T]: U }
+) => arr.map(fn) as { [K in keyof T]: U }
 
 function importProjectFromWeb<const T extends readonly ProjectId[]>(id: T) {
   const idParam = id
@@ -211,32 +210,30 @@ function importProjectFromWeb<const T extends readonly ProjectId[]>(id: T) {
 const projectNameRegex = /^작품 - (.+) : 엔트리$/
 const entExtensionRegex = /\.ent$/i
 
-function loadProjectsByLink<const T extends ProjectLinkIncludeShorten[]>(links: T) {
+function loadProjectsByLink<const T extends ProjectLinkIncludeShorten[]>(
+  links: T
+) {
   const loadedProjects = importProjectFromWeb(tupleMap(links, (v) => v.id))
 
-  const loadedProjectStates = tupleMap(
-    links,
-    (link, i): ProjectState => {
-      const { type, id, url, name } = link
-      const { id: resolvedId, project, assets } = loadedProjects[i]
+  const loadedProjectStates = tupleMap(links, (link, i): ProjectState => {
+    const { type, id, url, name } = link
+    const { id: resolvedId, project, assets } = loadedProjects[i]
 
-      const source = new ProjectSource({
-        origin: { type: 'url', origin: link },
-        label: url,
-        metadata: new ProjectMetadata(
-          name?.match(projectNameRegex)?.[1] ||
-            getNameOfProjectAsync(project),
-          type == 'shorten' ? undefined : getThumbUrl(id)
-        ),
-      })
-      source.setFromLoadingProject(
-        project,
-        type == 'shorten' ? resolvedId : undefined
-      )
+    const source = new ProjectSource({
+      origin: { type: 'url', origin: link },
+      label: url,
+      metadata: new ProjectMetadata(
+        name?.match(projectNameRegex)?.[1] || getNameOfProjectAsync(project),
+        type == 'shorten' ? undefined : getThumbUrl(id)
+      ),
+    })
+    source.setFromLoadingProject(
+      project,
+      type == 'shorten' ? resolvedId : undefined
+    )
 
-      return new ProjectState({ source, project, assets })
-    }
-  )
+    return new ProjectState({ source, project, assets })
+  })
 
   return loadedProjectStates
 }
@@ -275,7 +272,10 @@ export class ProjectListStore {
 
   reloadProject(i: number) {
     const { type, origin } = this.projects[i]!.source.origin
-    const [project] = type == 'file' ? loadProjectsByFile([origin]) : loadProjectsByLink([origin])
+    const [project] =
+      type == 'file'
+        ? loadProjectsByFile([origin])
+        : loadProjectsByLink([origin])
     this.projects[i] = project
   }
 

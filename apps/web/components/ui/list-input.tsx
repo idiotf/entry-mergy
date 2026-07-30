@@ -11,20 +11,14 @@ interface ListInputItemProps {
   store: ListStore<string>
 }
 
-function ListInputItem({
-  i,
-  value,
-  store,
-}: ListInputItemProps) {
+function ListInputItem({ i, value, store }: ListInputItemProps) {
   const setItem = useCallback(
-    ({ target: { value } }: React.ChangeEvent<HTMLInputElement>) => store.set(i, value),
+    ({ target: { value } }: React.ChangeEvent<HTMLInputElement>) =>
+      store.set(i, value),
     [i, store]
   )
 
-  const removeItem = useCallback(
-    () => store.remove(i),
-    [i, store]
-  )
+  const removeItem = useCallback(() => store.remove(i), [i, store])
 
   return (
     <li className='flex gap-2'>
@@ -41,10 +35,7 @@ export interface ListInputProps {
 }
 
 export const ListInput = observer(({ store }: ListInputProps) => {
-  const addItem = useCallback(
-    () => store.add(''),
-    [store]
-  )
+  const addItem = useCallback(() => store.add(''), [store])
 
   return (
     <div className='flex gap-2'>
@@ -53,12 +44,7 @@ export const ListInput = observer(({ store }: ListInputProps) => {
       </Button>
       <ul>
         {store.items.map(({ key, value }, i) => (
-          <ListInputItem
-            key={key}
-            i={i}
-            value={value}
-            store={store}
-          />
+          <ListInputItem key={key} i={i} value={value} store={store} />
         ))}
       </ul>
     </div>

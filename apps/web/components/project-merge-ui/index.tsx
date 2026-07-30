@@ -69,21 +69,33 @@ const ProjectOptionsUI = observer(
       [options]
     )
 
-    const setTimestampGap = useCallback((value?: number) => {
-      options.setTimestampGap(value)
-    }, [options])
+    const setTimestampGap = useCallback(
+      (value?: number) => {
+        options.setTimestampGap(value)
+      },
+      [options]
+    )
 
-    const setWaitForBGM = useCallback((value: boolean) => {
-      options.setWaitForBGM(value)
-    }, [options])
+    const setWaitForBGM = useCallback(
+      (value: boolean) => {
+        options.setWaitForBGM(value)
+      },
+      [options]
+    )
 
-    const setUseBGMCache = useCallback((value: boolean) => {
-      options.setWaitForBGM(true, value)
-    }, [options])
+    const setUseBGMCache = useCallback(
+      (value: boolean) => {
+        options.setWaitForBGM(true, value)
+      },
+      [options]
+    )
 
-    const setShareFunctions = useCallback((value: boolean) => {
-      options.coreOptions.setShareFunctions(value)
-    }, [options])
+    const setShareFunctions = useCallback(
+      (value: boolean) => {
+        options.coreOptions.setShareFunctions(value)
+      },
+      [options]
+    )
 
     return (
       <FieldGroup className='mt-2'>
@@ -147,15 +159,33 @@ const ProjectOptionsUI = observer(
             </Field>
             <Field>
               <FieldLabel htmlFor='waitForBGM'>BGM 로딩 기다리기</FieldLabel>
-              <Switch id='waitForBGM' checked={options.waitForBGM} onCheckedChange={setWaitForBGM} className='float-left' />
+              <Switch
+                id='waitForBGM'
+                checked={options.waitForBGM}
+                onCheckedChange={setWaitForBGM}
+                className='float-left'
+              />
             </Field>
             <Field data-disabled={!options.waitForBGM}>
               <FieldLabel htmlFor='useBGMCache'>BGM 로딩 캐시 사용</FieldLabel>
-              <Switch id='useBGMCache' checked={options.useBGMCache} disabled={!options.waitForBGM} onCheckedChange={setUseBGMCache} />
+              <Switch
+                id='useBGMCache'
+                checked={options.useBGMCache}
+                disabled={!options.waitForBGM}
+                onCheckedChange={setUseBGMCache}
+              />
             </Field>
             <Field>
-              <FieldLabel htmlFor='timestampGap'>타임스탬프 사이 간격</FieldLabel>
-              <NumberInput id='timestampGap' value={options.timestampGap} min={0} step='any' onValueChange={setTimestampGap} />
+              <FieldLabel htmlFor='timestampGap'>
+                타임스탬프 사이 간격
+              </FieldLabel>
+              <NumberInput
+                id='timestampGap'
+                value={options.timestampGap}
+                min={0}
+                step='any'
+                onValueChange={setTimestampGap}
+              />
             </Field>
           </>
         )}
@@ -165,7 +195,11 @@ const ProjectOptionsUI = observer(
         </Field>
         <Field>
           <FieldLabel htmlFor='shareFunctions'>작품 간 함수 공유</FieldLabel>
-          <Switch id='shareFunctions' checked={options.coreOptions.shareFunctions} onCheckedChange={setShareFunctions} />
+          <Switch
+            id='shareFunctions'
+            checked={options.coreOptions.shareFunctions}
+            onCheckedChange={setShareFunctions}
+          />
         </Field>
       </FieldGroup>
     )
