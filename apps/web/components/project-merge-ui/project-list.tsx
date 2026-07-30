@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useCallback, useEffect, useReducer } from 'react'
+import { Suspense, useCallback, useEffect, useState } from 'react'
 import Image from 'next/image'
 import { FileIcon, PlusIcon, RefreshCw, XIcon } from 'lucide-react'
 import { observer } from 'mobx-react-lite'
@@ -51,9 +51,14 @@ const ProjectItem = observer(({ id, projects, i, onRemove }: ProjectItemProps) =
   const hasError = !!project.error
   const thumbUrl = project.source.metadata.thumbUrl
 
-  const [thumbError, setThumbError] = useReducer(() => true, false)
+  const [thumbError, setThumbError] = useState(false)
+
+  const setThumbErrorToTrue = useCallback(() => {
+    setThumbError(true)
+  }, [])
 
   const reloadProject = useCallback(() => {
+    setThumbError(false)
     projects.reloadProject(i)
   }, [projects, i])
 
@@ -75,7 +80,7 @@ const ProjectItem = observer(({ id, projects, i, onRemove }: ProjectItemProps) =
             width={640}
             height={360}
             unoptimized
-            onError={setThumbError}
+            onError={setThumbErrorToTrue}
           />
         ) : (
           <AttachmentIcon />
