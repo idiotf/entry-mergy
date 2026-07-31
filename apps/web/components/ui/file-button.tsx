@@ -65,7 +65,7 @@ export function FileSelectZone({
       variant='ghost'
       {...props}
       className={cn(
-        'flex h-36 w-64! flex-col items-center justify-center rounded-sm border transition-colors [&>img]:size-full [&>svg]:size-12!',
+        'flex h-36.5 w-64.5! flex-col items-center justify-center rounded-sm border transition-colors [&>img]:size-full [&>svg]:size-12!',
         selected ? 'overflow-hidden p-0' : 'border-dashed',
         className
       )}

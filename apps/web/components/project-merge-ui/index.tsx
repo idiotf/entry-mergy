@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useId, useMemo, useState } from 'react'
 import { ChevronRight, ImageIcon, Music4Icon } from 'lucide-react'
 import { observer } from 'mobx-react-lite'
 import { cn } from '@/lib/utils'
@@ -226,16 +226,18 @@ interface SceneListItemProps {
 
 const SceneListItem = observer(
   ({ options, projectIdx, scene, sceneIdx }: SceneListItemProps) => {
+    const checkboxId = useId()
+
     const project = options.projects[projectIdx]!
-    const enabled = !options.disabledScenesMap.get(project)?.has(sceneIdx)
+    const enabled = !options.disabledScenes.get(project)?.has(sceneIdx)
 
     const enable = useCallback(() => {
-      options.enableSceneOf(projectIdx, sceneIdx)
-    }, [options, projectIdx, sceneIdx])
+      options.disabledScenes.enable(project, sceneIdx)
+    }, [options, project, sceneIdx])
 
     const disable = useCallback(() => {
-      options.disableSceneOf(projectIdx, sceneIdx)
-    }, [options, projectIdx, sceneIdx])
+      options.disabledScenes.disable(project, sceneIdx)
+    }, [options, project, sceneIdx])
 
     const setEnabled = useCallback(
       (enabled: boolean) => {
@@ -247,8 +249,8 @@ const SceneListItem = observer(
 
     return (
       <Field orientation='horizontal'>
-        <Checkbox checked={enabled} onCheckedChange={setEnabled} />
-        <FieldLabel>{scene.name}</FieldLabel>
+        <Checkbox id={checkboxId} checked={enabled} onCheckedChange={setEnabled} />
+        <FieldLabel htmlFor={checkboxId}>{scene.name}</FieldLabel>
       </Field>
     )
   }
@@ -263,22 +265,19 @@ const ProjectItemOptionsUI = observer(
   ({ options, i }: ProjectItemOptionsUIProps) => {
     const project = options.projects[i]!
 
-    const startTimestamp = options.timestamps[i - 1] || 0
-    const endTimestamp = options.timestamps[i]!
+    const startTimestamp = options.timestamps[i - 1] ?? options.firstTimestamp ?? undefined
+    const endTimestamp = options.timestamps[i]
 
     const setStartTimestamp = useCallback(
       (value?: number) => {
-        if (i == 0) return
-        if (value && value < 0) value = 0
-        options.setTimestampOf(i - 1, value)
+        options.setStartTimestamp(i, value)
       },
       [i, options]
     )
 
     const setEndTimestamp = useCallback(
       (value?: number) => {
-        if (value && value < 0) value = 0
-        options.setTimestampOf(i, value)
+        options.setEndTimestamp(i, value)
       },
       [i, options]
     )
@@ -321,7 +320,7 @@ const ProjectItemOptionsUI = observer(
           </Field>
         )}
         <Field>
-          <FieldLabel>장면 목록</FieldLabel>
+          <FieldLabel>병합할 장면 목록</FieldLabel>
           <FieldGroup>
             <FastSuspense fallback={<SceneListLoadingComp />}>
               {projectScenesListComp}
@@ -356,7 +355,7 @@ export const ProjectMergeUI = observer((props: ProjectMergeUIProps) => {
 
     try {
       const output = await mergeProjectsToOffline(options)
-      downloadBlob(await new Response(output).blob(), 'output.ent')
+      downloadBlob(await new Response(output).blob(), `output_${options.mergeMode}.ent`)
     } catch (e) {
       if (e instanceof OptionError) return setOptionError(e)
       console.error(e)
@@ -374,7 +373,7 @@ export const ProjectMergeUI = observer((props: ProjectMergeUIProps) => {
   return (
     <div {...rest} className={cn('space-y-2 pt-2 pb-4', className)}>
       <ProjectList
-        projects={options.projectListStore}
+        projects={options}
         options={getOptionsComp}
         onChange={handleChangeProjectList}
       />

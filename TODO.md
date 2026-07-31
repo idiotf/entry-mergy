@@ -1,3 +1,12 @@
+# apps
+
+## web
+
+- `options.timestamps` observable로 만들기
+- 병합 두 번 이상 시도 시 assets data locked 현상 수정
+- 썸네일, BGM, 작품 간 공유할 변수·리스트 UI 수정
+- BGM 시작/끝 시간 정해서 crop하는 기능 추가
+
 # packages
 
 ## kinetic

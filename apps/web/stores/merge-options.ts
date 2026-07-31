@@ -1,4 +1,4 @@
-import { makeAutoObservable } from 'mobx'
+import { makeAutoObservable, observable } from 'mobx'
 import { guessProjectTimestamp } from '@entry-mergy/kinetic/utils'
 import { ProjectListStore, type ProjectState } from './project-list-store'
 import {
@@ -15,6 +15,7 @@ import {
   getImageSizeViaURL,
 } from '@entry-mergy/media-metadata'
 import type { Project } from '@entry-mergy/entry-utils/types'
+import type { ProjectLinkIncludeShorten } from '@entry-mergy/web-project-loader/utils'
 
 // #region Merge Options Store
 
@@ -22,7 +23,7 @@ export type MergeMode = 'core' | 'kinetic'
 
 export class MergeUICoreOptions {
   preserveVar = new ListStore<string>()
-  shareFunctions = false
+  shareFunctions = true
 
   constructor() {
     makeAutoObservable(this)
@@ -52,12 +53,109 @@ export interface BGMWithData extends WithData {
   duration: Promise<number>
 }
 
-export class MergeUIOptionsStore {
+/**
+ * - `number` First timestamp is setted
+ * - `undefined` First timestamp is *not* setted
+ * - `null` First timestamp is setted to *empty* 
+ */
+type TimestampOptionValue = number | undefined | null
+
+class TimestampsStore {
+  private map = new WeakMap<ProjectState, number | undefined>()
+  private isGuessedProject = new Set<ProjectState>()
+  private isGuessedEndTimestamp = new Set<ProjectState>()
+  firstTimestamp?: TimestampOptionValue
+
+  constructor(private projectListStore: ProjectListStore) {
+    makeAutoObservable(this)
+  }
+
+  private get projects() {
+    return this.projectListStore.projects
+  }
+
+  get timestamps() {
+    return this.projects.map((state) => this.map.get(state))
+  }
+
+  initTimestamps() {
+    this.projects.forEach((state) => {
+      if (this.isGuessedProject.has(state)) return
+      this.isGuessedProject.add(state)
+
+      state.project.then((project) => {
+        const i = this.projects.indexOf(state)
+        if (i < 0) return
+
+        // When guessing timestamps, start timestamp takes precedence
+        const prevProject = this.projects[i - 1]!
+        const hasStartTimestamp =
+          i == 0
+            ? this.firstTimestamp !== undefined
+            : this.map.has(prevProject) && !this.isGuessedEndTimestamp.has(prevProject)
+        const hasEndTimestamp = this.map.has(state)
+
+        const { start, end } = guessProjectTimestamp(project)
+        if (start !== null && !hasStartTimestamp) {
+          this.setStartTimestamp(i, start)
+        }
+        if (end !== null && !hasEndTimestamp) {
+          this.setEndTimestamp(i, end)
+          this.isGuessedEndTimestamp.add(state)
+        }
+      })
+    })
+  }
+
+  setStartTimestamp(i: number, timestamp: number | undefined) {
+    if (timestamp && timestamp < 0) timestamp = 0
+
+    if (i == 0) this.firstTimestamp = timestamp ?? null
+    else this.setEndTimestamp(i - 1, timestamp)
+  }
+
+  setEndTimestamp(i: number, timestamp: number | undefined) {
+    if (timestamp && timestamp < 0) timestamp = 0
+
+    const state = this.projects[i]!
+    this.map.set(state, timestamp)
+    this.isGuessedEndTimestamp.delete(state)
+  }
+}
+
+class DisabledScenesStore {
+  private map = new WeakMap<ProjectState, Set<number>>()
+
+  constructor() {
+    makeAutoObservable(this)
+  }
+
+  get(project: ProjectState) {
+    let disabledScenes = this.map.get(project)
+    if (!disabledScenes) {
+      this.map.set(project, observable(disabledScenes = new Set()))
+    }
+
+    return disabledScenes
+  }
+
+  enable(project: ProjectState, sceneIdx: number) {
+    const disabledScenes = this.get(project)
+    disabledScenes.delete(sceneIdx)
+  }
+
+  disable(project: ProjectState, sceneIdx: number) {
+    const disabledScenes = this.get(project)
+    disabledScenes.add(sceneIdx)
+  }
+}
+
+export class MergeUIOptionsStore implements ProjectListStore {
   mergeMode: MergeMode = 'core'
   coreOptions = new MergeUICoreOptions()
 
-  protected timestampsMap = new WeakMap<ProjectState, number | undefined>()
-  disabledScenesMap = new WeakMap<ProjectState, Set<number>>()
+  private timestampsMap = new TimestampsStore(this.projectListStore)
+  disabledScenes = new DisabledScenesStore()
   thumbnail?: ThumbnailWithData | undefined
   bgm?: BGMWithData | undefined
 
@@ -65,7 +163,7 @@ export class MergeUIOptionsStore {
   waitForBGM = true
   useBGMCache = true
 
-  constructor(public projectListStore = new ProjectListStore()) {
+  constructor(private projectListStore = new ProjectListStore()) {
     makeAutoObservable(this)
   }
 
@@ -73,8 +171,16 @@ export class MergeUIOptionsStore {
     return this.projectListStore.projects
   }
 
+  get projectsStore() {
+    return this.projectListStore.projectsStore
+  }
+
   get timestamps() {
-    return this.projects.map((state) => this.timestampsMap.get(state))
+    return this.timestampsMap.timestamps
+  }
+
+  get firstTimestamp() {
+    return this.timestampsMap.firstTimestamp
   }
 
   get memos() {
@@ -87,48 +193,14 @@ export class MergeUIOptionsStore {
 
     if (this.useBGMCache)
       memos.push(
-        `테이블이 없는 경우 2행 1열 테이블을 만든 뒤 '썸네일'의 코드에 적용해주세요.`
+        `테이블이 없는 경우, '데이터분석'에서 2행 1열 테이블을 만든 뒤 '썸네일'의 코드에 적용해주세요.`
       )
 
     if (memos.length) return memos
   }
 
-  disableSceneOf(i: number, sceneIdx: number) {
-    const state = this.projects[i]!
-
-    let disabledScenes = this.disabledScenesMap.get(state)
-    if (!disabledScenes) {
-      this.disabledScenesMap.set(state, (disabledScenes = new Set()))
-    }
-
-    disabledScenes.add(sceneIdx)
-  }
-
-  enableSceneOf(i: number, sceneIdx: number) {
-    const state = this.projects[i]!
-
-    const disabledScenes = this.disabledScenesMap.get(state)
-    if (!disabledScenes) return
-
-    disabledScenes.delete(sceneIdx)
-  }
-
-  protected initKineticOptions() {
-    this.projects.forEach((state) => {
-      const { project } = state
-
-      if (!this.timestampsMap.has(state)) {
-        project.then((project) => {
-          const i = this.projects.indexOf(state)
-          if (i < 0) return
-
-          const { start, end } = guessProjectTimestamp(project)
-          if (start !== null && i > 0) this.setTimestampOf(i - 1, start)
-          if (end !== null && this.timestamps[i] === null)
-            this.setTimestampOf(i, end)
-        })
-      }
-    })
+  private initKineticOptions() {
+    this.timestampsMap.initTimestamps()
   }
 
   setMergeMode(mode: MergeMode) {
@@ -136,11 +208,35 @@ export class MergeUIOptionsStore {
     if (mode == 'kinetic') this.initKineticOptions()
   }
 
-  setTimestampOf(i: number, endTimestamp: number | undefined) {
-    if (endTimestamp && endTimestamp < 0) endTimestamp = 0
+  private initOptions() {
+    if (this.mergeMode == 'kinetic') this.initKineticOptions()
+  }
 
-    const state = this.projects[i]!
-    this.timestampsMap.set(state, endTimestamp)
+  addProjectByLink(links: ProjectLinkIncludeShorten[]) {
+    this.projectListStore.addProjectByLink(links)
+    this.initOptions()
+  }
+
+  addProjectByFile(files: File[]) {
+    this.projectListStore.addProjectByFile(files)
+    this.initOptions()
+  }
+
+  reloadProject(i: number) {
+    this.projectListStore.reloadProject(i)
+    this.initOptions()
+  }
+
+  removeProject(i: number) {
+    this.projectListStore.removeProject(i)
+  }
+
+  setStartTimestamp(i: number, timestamp: number | undefined) {
+    this.timestampsMap.setStartTimestamp(i, timestamp)
+  }
+
+  setEndTimestamp(i: number, timestamp: number | undefined) {
+    this.timestampsMap.setEndTimestamp(i, timestamp)
   }
 
   setThumbnail(file?: File) {
@@ -223,15 +319,29 @@ export class OptionError extends Error {
 OptionError.prototype.name = 'OptionError'
 OptionError.prototype.message = ''
 
+function filterScenes(project: Project, disabledScenesIdx: Set<number>) {
+  const sceneIdxMap = new Map(
+    [...disabledScenesIdx]
+      .map((v) => [project.scenes[v]?.id, v])
+      .filter((v): v is [string, number] => v[0] !== undefined)
+  )
+
+  const scenes = project.scenes.filter((_, i) => !disabledScenesIdx?.has(i))
+
+  const objects = project.objects.filter(({ scene }) => {
+    const sceneIdx = sceneIdxMap.get(scene)
+    return sceneIdx === undefined || !disabledScenesIdx?.has(sceneIdx)
+  })
+
+  return { ...project, scenes, objects }
+}
+
 function getSelectedProjects(options: MergeUIOptionsStore) {
   return options.projects.map((state, i) => {
-    const disabledScenes = options.disabledScenesMap.get(state)
+    const disabledScenes = options.disabledScenes.get(state)
 
     return state.project.then(
-      (project) => ({
-        ...project,
-        scenes: project.scenes.filter((_, i) => !disabledScenes?.has(i)),
-      }),
+      (project) => filterScenes(project, disabledScenes),
       (e) => {
         console.error(e)
         throw `${i + 1}번째 작품을 불러오는 중 오류가 발생했습니다.`
@@ -290,7 +400,7 @@ async function mergeProjectsViaKinetic(
   const bgm = {
     url: options.bgm.assetPath,
     format: options.bgm.format,
-    duration: await options.bgm.duration,
+    duration: +(await options.bgm.duration).toFixed(1),
   }
 
   const coreOptions = resolveCoreOptions(options.coreOptions)

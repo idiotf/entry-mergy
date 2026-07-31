@@ -62,10 +62,13 @@ export function normalizeAssetPathToOffline(project: Project) {
 function gzipUint8ArrayToStream(arr: Promise<Uint8Array<ArrayBuffer>>) {
   const gzipStream = new CompressionStream('gzip')
   const writer = gzipStream.writable.getWriter()
-  arr.then((arr) => {
-    writer.write(arr)
-    writer.close()
-  })
+  arr.then(
+    (arr) => {
+      writer.write(arr)
+      writer.close()
+    },
+    (reason) => writer.abort(reason)
+  )
   return gzipStream.readable
 }
 
