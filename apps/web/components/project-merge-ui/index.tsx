@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { ChevronRight, ImageIcon, Music4Icon } from 'lucide-react'
 import { observer } from 'mobx-react-lite'
 import { cn } from '@/lib/utils'
@@ -34,6 +34,9 @@ import { FileSelectZone } from '../ui/file-button'
 import { NumberInput } from '../ui/number-input'
 import { Switch } from '../ui/switch'
 import { ListInput } from '../ui/list-input'
+import { Checkbox } from '../ui/checkbox'
+import type { Scene } from '@entry-mergy/entry-utils/types'
+import { FastSuspense } from '../fast-suspense'
 
 interface ProjectOptionsUIProps {
   options: MergeUIOptionsStore
@@ -206,6 +209,130 @@ const ProjectOptionsUI = observer(
   }
 )
 
+function SceneListErrorComp() {
+  return <>작품을 불러오는 중 오류가 발생했습니다.</>
+}
+
+function SceneListLoadingComp() {
+  return <>작품을 불러오는 중...</>
+}
+
+interface SceneListItemProps {
+  options: MergeUIOptionsStore
+  projectIdx: number
+  scene: Scene
+  sceneIdx: number
+}
+
+const SceneListItem = observer(
+  ({ options, projectIdx, scene, sceneIdx }: SceneListItemProps) => {
+    const project = options.projects[projectIdx]!
+    const enabled = !options.disabledScenesMap.get(project)?.has(sceneIdx)
+
+    const enable = useCallback(() => {
+      options.enableSceneOf(projectIdx, sceneIdx)
+    }, [options, projectIdx, sceneIdx])
+
+    const disable = useCallback(() => {
+      options.disableSceneOf(projectIdx, sceneIdx)
+    }, [options, projectIdx, sceneIdx])
+
+    const setEnabled = useCallback(
+      (enabled: boolean) => {
+        if (enabled) enable()
+        else disable()
+      },
+      [enable, disable]
+    )
+
+    return (
+      <Field orientation='horizontal'>
+        <Checkbox checked={enabled} onCheckedChange={setEnabled} />
+        <FieldLabel>{scene.name}</FieldLabel>
+      </Field>
+    )
+  }
+)
+
+interface ProjectItemOptionsUIProps {
+  options: MergeUIOptionsStore
+  i: number
+}
+
+const ProjectItemOptionsUI = observer(
+  ({ options, i }: ProjectItemOptionsUIProps) => {
+    const project = options.projects[i]!
+
+    const startTimestamp = options.timestamps[i - 1] || 0
+    const endTimestamp = options.timestamps[i]!
+
+    const setStartTimestamp = useCallback(
+      (value?: number) => {
+        if (i == 0) return
+        if (value && value < 0) value = 0
+        options.setTimestampOf(i - 1, value)
+      },
+      [i, options]
+    )
+
+    const setEndTimestamp = useCallback(
+      (value?: number) => {
+        if (value && value < 0) value = 0
+        options.setTimestampOf(i, value)
+      },
+      [i, options]
+    )
+
+    const projectScenesListComp = useMemo(
+      () =>
+        project.project.then(
+          ({ scenes }) =>
+            scenes.map((scene, j) => (
+              <SceneListItem
+                key={j}
+                options={options}
+                projectIdx={i}
+                scene={scene}
+                sceneIdx={j}
+              />
+            )),
+          () => <SceneListErrorComp />
+        ),
+      [i, options, project.project]
+    )
+
+    return (
+      <FieldGroup>
+        {options.mergeMode == 'kinetic' && (
+          <Field>
+            <FieldLabel>타임스탬프</FieldLabel>
+            <NumberInput
+              value={startTimestamp}
+              min={0}
+              step='any'
+              onValueChange={setStartTimestamp}
+            />
+            <NumberInput
+              value={endTimestamp}
+              min={0}
+              step='any'
+              onValueChange={setEndTimestamp}
+            />
+          </Field>
+        )}
+        <Field>
+          <FieldLabel>장면 목록</FieldLabel>
+          <FieldGroup>
+            <FastSuspense fallback={<SceneListLoadingComp />}>
+              {projectScenesListComp}
+            </FastSuspense>
+          </FieldGroup>
+        </Field>
+      </FieldGroup>
+    )
+  }
+)
+
 export interface ProjectMergeUIProps extends React.ComponentProps<'div'> {
   options: MergeUIOptionsStore
 }
@@ -239,10 +366,16 @@ export const ProjectMergeUI = observer((props: ProjectMergeUIProps) => {
     }
   }, [options])
 
+  const getOptionsComp = useCallback(
+    (i: number) => <ProjectItemOptionsUI options={options} i={i} />,
+    [options]
+  )
+
   return (
     <div {...rest} className={cn('space-y-2 pt-2 pb-4', className)}>
       <ProjectList
         projects={options.projectListStore}
+        options={getOptionsComp}
         onChange={handleChangeProjectList}
       />
       <Collapsible>

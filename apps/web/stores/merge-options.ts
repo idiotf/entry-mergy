@@ -56,7 +56,8 @@ export class MergeUIOptionsStore {
   mergeMode: MergeMode = 'core'
   coreOptions = new MergeUICoreOptions()
 
-  protected timestampsMap = new WeakMap<ProjectState, number>()
+  protected timestampsMap = new WeakMap<ProjectState, number | undefined>()
+  disabledScenesMap = new WeakMap<ProjectState, Set<number>>()
   thumbnail?: ThumbnailWithData | undefined
   bgm?: BGMWithData | undefined
 
@@ -73,9 +74,7 @@ export class MergeUIOptionsStore {
   }
 
   get timestamps() {
-    return this.projects.map(
-      (state) => this.timestampsMap.get(state) ?? undefined
-    )
+    return this.projects.map((state) => this.timestampsMap.get(state))
   }
 
   get memos() {
@@ -83,7 +82,7 @@ export class MergeUIOptionsStore {
 
     const memos: string[] = []
 
-    if (this.projects.some((project) => project.source.type != 'file'))
+    if (this.projects.some((project) => !project.assets))
       memos.push('오프라인 작품 에디터에서는 일부 애셋이 표시되지 않습니다.')
 
     if (this.useBGMCache)
@@ -92,6 +91,26 @@ export class MergeUIOptionsStore {
       )
 
     if (memos.length) return memos
+  }
+
+  disableSceneOf(i: number, sceneIdx: number) {
+    const state = this.projects[i]!
+
+    let disabledScenes = this.disabledScenesMap.get(state)
+    if (!disabledScenes) {
+      this.disabledScenesMap.set(state, (disabledScenes = new Set()))
+    }
+
+    disabledScenes.add(sceneIdx)
+  }
+
+  enableSceneOf(i: number, sceneIdx: number) {
+    const state = this.projects[i]!
+
+    const disabledScenes = this.disabledScenesMap.get(state)
+    if (!disabledScenes) return
+
+    disabledScenes.delete(sceneIdx)
   }
 
   protected initKineticOptions() {
@@ -117,11 +136,10 @@ export class MergeUIOptionsStore {
     if (mode == 'kinetic') this.initKineticOptions()
   }
 
-  setTimestampOf(i: number, endTimestamp: number) {
-    if (endTimestamp < 0) endTimestamp = 0
+  setTimestampOf(i: number, endTimestamp: number | undefined) {
+    if (endTimestamp && endTimestamp < 0) endTimestamp = 0
 
-    const state = this.projects[i]
-    if (!state) return
+    const state = this.projects[i]!
     this.timestampsMap.set(state, endTimestamp)
   }
 
@@ -206,12 +224,20 @@ OptionError.prototype.name = 'OptionError'
 OptionError.prototype.message = ''
 
 function getSelectedProjects(options: MergeUIOptionsStore) {
-  return options.projects.map((state, i) =>
-    state.project.catch((e) => {
-      console.error(e)
-      throw `${i + 1}번째 작품을 불러오는 중 오류가 발생했습니다.`
-    })
-  )
+  return options.projects.map((state, i) => {
+    const disabledScenes = options.disabledScenesMap.get(state)
+
+    return state.project.then(
+      (project) => ({
+        ...project,
+        scenes: project.scenes.filter((_, i) => !disabledScenes?.has(i)),
+      }),
+      (e) => {
+        console.error(e)
+        throw `${i + 1}번째 작품을 불러오는 중 오류가 발생했습니다.`
+      }
+    )
+  })
 }
 
 function mergeSelectedProjects(
@@ -304,9 +330,7 @@ export async function mergeProjectsToOffline(options: MergeUIOptionsStore) {
   const projects = getSelectedProjects(options)
   const merged = await mergeSelectedProjects(projects, options)
 
-  // TODO (after offline-project-loader bugfix)
-  // const assets = iterateAllAssets(options)
-  const assets = undefined
+  const assets = iterateAllAssets(options)
   return exportProjectToOffline(merged, assets, true)
 }
 

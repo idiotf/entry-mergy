@@ -22,10 +22,12 @@ export class ListStore<T> {
   }
 
   add(...value: T[]) {
-    this.items.push(...value.map((value) => ({
-      key: this.cnt++,
-      value,
-    })))
+    this.items.push(
+      ...value.map((value) => ({
+        key: this.cnt++,
+        value,
+      }))
+    )
   }
 
   remove(i: number) {
@@ -37,7 +39,9 @@ export class ListStore<T> {
   }
 
   setOrder(keys: number[]) {
-    const map = new Map<number, ListItem<T>>(this.items.map((item) => [item.key, item]))
+    const map = new Map<number, ListItem<T>>(
+      this.items.map((item) => [item.key, item])
+    )
     this.items = keys.map((key) => map.get(key)!)
   }
 }

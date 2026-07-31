@@ -35,15 +35,16 @@ async function getProjectJSON(tar: TarExtract): Promise<Project> {
 }
 
 async function* getAssets(tar: TarExtract) {
-  for await (const entry of tar) {
-    const { header } = entry
-    if (header.type != 'file' || header.name == projectJSONFilename) continue
+  // TODO: implement extracting assets from tar
+  // for await (const entry of tar) {
+  //   const { header } = entry
+  //   if (header.type != 'file' || header.name == projectJSONFilename) continue
 
-    yield {
-      name: header.name,
-      data: convertNodeStreamToWebStream(entry),
-    }
-  }
+  //   yield {
+  //     name: header.name,
+  //     data: convertNodeStreamToWebStream(entry),
+  //   }
+  // }
 }
 
 export function importProjectFromOffline(
