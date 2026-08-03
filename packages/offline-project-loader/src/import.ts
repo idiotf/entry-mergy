@@ -34,18 +34,18 @@ async function getProjectJSON(tar: TarExtract): Promise<Project> {
   throw TypeError('Cannot find project.json from offline file')
 }
 
-async function* getAssets(tar: TarExtract) {
-  // TODO: implement extracting assets from tar
-  // for await (const entry of tar) {
-  //   const { header } = entry
-  //   if (header.type != 'file' || header.name == projectJSONFilename) continue
+// TODO: implement extracting assets from tar
+// async function* getAssets(tar: TarExtract) {
+//   for await (const entry of tar) {
+//     const { header } = entry
+//     if (header.type != 'file' || header.name == projectJSONFilename) continue
 
-  //   yield {
-  //     name: header.name,
-  //     data: convertNodeStreamToWebStream(entry),
-  //   }
-  // }
-}
+//     yield {
+//       name: header.name,
+//       data: convertNodeStreamToWebStream(entry),
+//     }
+//   }
+// }
 
 export function importProjectFromOffline(
   data: ReadableStream<Uint8Array<ArrayBuffer>>
@@ -64,8 +64,43 @@ export function importProjectFromOffline(
     }
   })
 
-  const project = getProjectJSON(tar)
-  const assets = getAssets(tar)
+  const project = getProjectJSON(tar).finally(abortProject)
+  // TODO: implement extracting assets from tar
+  // const assets = getAssets(tar)
+  const assets = {
+    async *[Symbol.asyncIterator]() {},
+  }
 
-  return { project, assets }
+  const projectController = new AbortController()
+  // const assetsController = new AbortController()
+
+  function abortProject() {
+    projectController.abort()
+    setIfComplete()
+  }
+
+  // function abortAssets() {
+  //   assetsController.abort()
+  //   setIfComplete()
+  // }
+
+  function setIfComplete() {
+    if (
+      projectController.signal.aborted /*&&
+      assetsController.signal.aborted*/
+    ) {
+      tar.destroy()
+    }
+  }
+
+  return {
+    project,
+    assets,
+    cancelProject() {
+      abortProject()
+    },
+    cancelAssets() {
+      // abortAssets()
+    },
+  }
 }

@@ -70,10 +70,4 @@ export class EntryGraphQLClient {
     }
     return JSON.parse(text)
   }
-
-  requestWithTimeout(query: string, variables?: unknown, timeout = 10000) {
-    return this.request(query, variables, {
-      signal: AbortSignal.timeout(timeout),
-    })
-  }
 }

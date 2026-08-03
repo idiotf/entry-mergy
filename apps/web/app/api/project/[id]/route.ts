@@ -26,7 +26,7 @@ function resolveUserInputId(userInputId: string) {
 const client = new EntryGraphQLClient()
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   ctx: RouteContext<'/api/project/[id]'>
 ) {
   const { id: userInputId } = await ctx.params
@@ -43,7 +43,11 @@ export async function GET(
   )
 
   try {
-    const projects = await selectProjectMany(client, resolvedId)
+    const projects = await selectProjectMany(
+      client,
+      resolvedId,
+      { signal: req.signal }
+    )
     return NextResponse.json(
       projects.map((project, i) => {
         const id = resolvedId[i]

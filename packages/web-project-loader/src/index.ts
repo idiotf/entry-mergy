@@ -54,42 +54,103 @@ const getSoundPath = (sound: object) =>
       ? `${(sound.filename + '').substring(0, 2)}/${(sound.filename + '').substring(2, 4)}/${sound.filename}${'ext' in sound ? sound.ext : '.mp3'}`
       : null
 
-export async function* getAssetsFromProject(project: Project) {
+export async function* getAssetsFromProject(
+  project: Project,
+  signal: AbortSignal
+) {
   const { objects } = project
   const pictures = objects.flatMap((obj) => obj.sprite.pictures)
   const sounds = objects.flatMap((obj) => obj.sprite.sounds)
 
   for (const picture of pictures) {
+    if (signal.aborted) throw signal.reason
     const innerPath = getPicturePath(picture)
     if (innerPath !== null) yield getAssetFromPath(innerPath)
   }
   for (const sound of sounds) {
+    if (signal.aborted) throw signal.reason
     const innerPath = getSoundPath(sound)
     if (innerPath !== null) yield getAssetFromPath(innerPath)
   }
 }
 
-async function* getAssetsFromAsyncProject(project: Promise<Project>) {
-  return yield* getAssetsFromProject(await project)
+async function* getAssetsFromAsyncProject(
+  project: Promise<Project>,
+  signal: AbortSignal
+) {
+  return yield* getAssetsFromProject(await withSignal(project, signal), signal)
+}
+
+function withSignal<T>(promise: Promise<T>, signal: AbortSignal) {
+  return new Promise<T>((resolve, reject) => {
+    if (signal.aborted) return reject(signal.reason)
+
+    const onAbort = () => reject(signal.reason)
+    signal.addEventListener('abort', onAbort, { once: true })
+    promise
+      .finally(() => signal.removeEventListener('abort', onAbort))
+      .then(resolve, reject)
+  })
 }
 
 export function importProjectFromWeb(
   client: EntryGraphQLClient,
   id: readonly ProjectId[]
 ): ImportedProject[] {
-  const projects = selectProjectMany(client, id)
+  const controller = new AbortController()
+  const projects = selectProjectMany(client, id, { signal: controller.signal })
+
+  const projectsComplete = id.map(() => false)
+  function abortIfAllComplete() {
+    if (projectsComplete.every((v) => v)) controller.abort()
+  }
 
   return id.map((id, i) => {
-    const project = projects.then((projects) => {
-      const project = projects[i]
-      if (!project)
-        throw TypeError(`Failed to load project ${id} (at ${i + 1})`)
-      return project
-    })
+    const projectController = new AbortController()
+    const assetsController = new AbortController()
 
-    const assets = getAssetsFromAsyncProject(project)
+    const project = projects
+      .then((projects) => {
+        const project = projects[i]
+        if (!project)
+          throw TypeError(`Failed to load project ${id} (at ${i + 1})`)
+        return project
+      })
+      .finally(abortProject)
 
-    return { project, assets }
+    const assets = {
+      [Symbol.asyncIterator]() {
+        return getAssetsFromAsyncProject(project, assetsController.signal)
+      },
+    }
+
+    function abortProject() {
+      projectController.abort()
+      setIfComplete()
+    }
+
+    function abortAssets() {
+      assetsController.abort()
+      setIfComplete()
+    }
+
+    function setIfComplete() {
+      if (projectController.signal.aborted && assetsController.signal.aborted) {
+        projectsComplete[i] = true
+        abortIfAllComplete()
+      }
+    }
+
+    return {
+      project: withSignal(project, projectController.signal),
+      assets,
+      cancelProject() {
+        abortProject()
+      },
+      cancelAssets() {
+        abortAssets()
+      },
+    }
   })
 }
 

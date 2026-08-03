@@ -37,7 +37,6 @@ export class MergeUICoreOptions {
 interface WithData {
   file: File
   blobUrl: string
-  data: ReadableStream<Uint8Array<ArrayBuffer>>
 }
 
 export interface ThumbnailWithData extends WithData {
@@ -61,9 +60,9 @@ export interface BGMWithData extends WithData {
 type TimestampOptionValue = number | undefined | null
 
 class TimestampsStore {
-  private map = new WeakMap<ProjectState, number | undefined>()
-  private isGuessedProject = new Set<ProjectState>()
-  private isGuessedEndTimestamp = new Set<ProjectState>()
+  private map = new Map<ProjectState, number | undefined>()
+  private isGuessedProject = new WeakSet<ProjectState>()
+  private isGuessedEndTimestamp = new WeakSet<ProjectState>()
   firstTimestamp?: TimestampOptionValue
 
   constructor(private projectListStore: ProjectListStore) {
@@ -260,7 +259,6 @@ export class MergeUIOptionsStore implements ProjectListStore {
       height,
       file,
       blobUrl,
-      data: file.stream(),
     }
   }
 
@@ -282,7 +280,6 @@ export class MergeUIOptionsStore implements ProjectListStore {
       duration,
       file,
       blobUrl: URL.createObjectURL(file),
-      data: file.stream(),
     }
   }
 
@@ -315,9 +312,11 @@ export class OptionError extends Error {
   ) {
     super(optionErrorTypes[type])
   }
+
+  override get name() {
+    return 'OptionError'
+  }
 }
-OptionError.prototype.name = 'OptionError'
-OptionError.prototype.message = ''
 
 function filterScenes(project: Project, disabledScenesIdx: Set<number>) {
   const sceneIdxMap = new Map(
@@ -422,17 +421,37 @@ async function mergeProjectsViaKinetic(
   return mergeAllKineticAsync(projects, resolvedOptions)
 }
 
+function convertPromiseBlobToStream(blob: Promise<Blob>) {
+  const stream = blob.then((blob) => blob.stream())
+  const reader = stream.then((stream) => stream.getReader())
+
+  return new ReadableStream<Uint8Array<ArrayBuffer>>({
+    async pull(controller) {
+      const data = await (await reader).read()
+      return data.done
+        ? controller.close()
+        : controller.enqueue(data.value)
+    },
+    async cancel(reason) {
+      return (await stream).cancel(reason)
+    },
+  })
+}
+
 async function* iterateAllAssets(options: MergeUIOptionsStore) {
   if (options.mergeMode == 'kinetic') {
     if (!options.thumbnail) throw new OptionError('mustSelectThumbnail')
     if (!options.bgm) throw new OptionError('mustSelectBGM')
 
-    yield { name: options.thumbnail.assetPath, data: options.thumbnail.data }
-    yield { name: options.bgm.assetPath, data: options.bgm.data }
+    yield { name: options.thumbnail.assetPath, data: options.thumbnail.file.stream() }
+    yield { name: options.bgm.assetPath, data: options.bgm.file.stream() }
   }
 
   for (const { assets } of options.projects) {
-    if (assets) yield* assets
+    if (!assets) continue
+    for await (const { name, data } of assets) {
+      yield { name, data: convertPromiseBlobToStream(data) }
+    }
   }
 }
 

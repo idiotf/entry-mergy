@@ -21,7 +21,7 @@ import {
   CollapsibleTrigger,
 } from '../ui/collapsible'
 import { ProjectList } from './project-list'
-import { Field, FieldError, FieldGroup, FieldLabel } from '../ui/field'
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '../ui/field'
 import {
   Select,
   SelectContent,
@@ -210,11 +210,11 @@ const ProjectOptionsUI = observer(
 )
 
 function SceneListErrorComp() {
-  return <>작품을 불러오는 중 오류가 발생했습니다.</>
+  return <FieldDescription>작품을 불러오는 중 오류가 발생했습니다.</FieldDescription>
 }
 
 function SceneListLoadingComp() {
-  return <>작품을 불러오는 중...</>
+  return <FieldDescription>작품을 불러오는 중...</FieldDescription>
 }
 
 interface SceneListItemProps {
@@ -265,7 +265,10 @@ const ProjectItemOptionsUI = observer(
   ({ options, i }: ProjectItemOptionsUIProps) => {
     const project = options.projects[i]!
 
-    const startTimestamp = options.timestamps[i - 1] ?? options.firstTimestamp ?? undefined
+    const startTimestamp =
+      i == 0
+        ? options.firstTimestamp ?? undefined
+        : options.timestamps[i - 1]
     const endTimestamp = options.timestamps[i]
 
     const setStartTimestamp = useCallback(
@@ -285,16 +288,19 @@ const ProjectItemOptionsUI = observer(
     const projectScenesListComp = useMemo(
       () =>
         project.project.then(
-          ({ scenes }) =>
-            scenes.map((scene, j) => (
-              <SceneListItem
-                key={j}
-                options={options}
-                projectIdx={i}
-                scene={scene}
-                sceneIdx={j}
-              />
-            )),
+          ({ scenes }) => (
+            <FieldGroup className='gap-3'>
+              {scenes.map((scene, j) => (
+                <SceneListItem
+                  key={j}
+                  options={options}
+                  projectIdx={i}
+                  scene={scene}
+                  sceneIdx={j}
+                />
+              ))}
+            </FieldGroup>
+          ),
           () => <SceneListErrorComp />
         ),
       [i, options, project.project]
@@ -321,11 +327,9 @@ const ProjectItemOptionsUI = observer(
         )}
         <Field>
           <FieldLabel>병합할 장면 목록</FieldLabel>
-          <FieldGroup>
-            <FastSuspense fallback={<SceneListLoadingComp />}>
-              {projectScenesListComp}
-            </FastSuspense>
-          </FieldGroup>
+          <FastSuspense fallback={<SceneListLoadingComp />}>
+            {projectScenesListComp}
+          </FastSuspense>
         </Field>
       </FieldGroup>
     )

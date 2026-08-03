@@ -8,22 +8,61 @@ import type { ProjectId } from '@entry-mergy/entry-api-client'
 
 type MaybePromise<T> = Promise<T> | T
 
-export interface ProjectStateInit {
+interface BlobAsset {
+  name: string
+  data: Promise<Blob>
+}
+
+async function* convertAssetsToBlob(
+  assets: AsyncIterable<Asset>
+): AsyncIterable<BlobAsset> {
+  function convertToBlob(result: IteratorResult<Asset>) {
+    return result.done ? result : {
+      ...result,
+      value: {
+        ...result.value,
+        data: new Response(result.value.data).blob(),
+      },
+    }
+  }
+
+  return {
+    [Symbol.asyncIterator](): AsyncIterator<BlobAsset> {
+      const assetsIterator = assets[Symbol.asyncIterator]()
+
+      return {
+        async next(value) {
+          return convertToBlob(await assetsIterator.next(value))
+        },
+        async return(value) {
+          return convertToBlob(
+            await assetsIterator.return?.(value) || { done: true, value }
+          )
+        },
+        async throw(e) {
+          if (!assetsIterator.throw) throw e
+          return convertToBlob(await assetsIterator.throw(e))
+        },
+      }
+    },
+  }
+}
+
+export interface ProjectStateInit extends Omit<ImportedProject, 'assets'> {
   source: ProjectSource
-  project: Promise<Project>
   assets?: AsyncIterable<Asset> | undefined
 }
 
 export class ProjectState {
   source: ProjectSource
   project: Promise<Project>
-  assets?: AsyncIterable<Asset> | undefined
+  assets?: AsyncIterable<BlobAsset> | undefined
   error?: unknown
 
-  constructor(init: ProjectStateInit) {
+  constructor(private init: ProjectStateInit) {
     this.source = init.source
     this.project = init.project
-    this.assets = init.assets
+    this.assets = init.assets && convertAssetsToBlob(init.assets)
 
     makeAutoObservable(this)
 
@@ -32,6 +71,19 @@ export class ProjectState {
         this.error = e
       })
     })
+  }
+
+  cancelProject() {
+    this.init.cancelProject()
+  }
+
+  cancelAssets() {
+    this.init.cancelAssets()
+  }
+
+  cancelLoad() {
+    this.cancelProject()
+    this.cancelAssets()
   }
 }
 
@@ -79,6 +131,7 @@ export class ProjectSource {
 
     let id: Promise<string | undefined> | undefined =
       resolvedId === undefined ? undefined : Promise.resolve(resolvedId)
+
     if (this.metadata.thumbUrl === undefined) {
       id ||= getOriginOfProjectAsync(project)
       this.metadata.setThumbUrlWhenLoaded(
@@ -166,7 +219,7 @@ interface ProjectFetchResult {
   project: Project | null
 }
 
-interface ImportedProjectWithId extends ImportedProject {
+interface ImportedProjectWithId extends Omit<ImportedProject, 'assets'> {
   id: MaybePromise<string>
 }
 
@@ -175,16 +228,41 @@ const tupleMap = <const T extends readonly unknown[], U>(
   fn: <I extends keyof T & number>(value: T[I], index: I) => U
 ) => arr.map(fn) as { [K in keyof T]: U }
 
-function importProjectFromWeb<const T extends readonly ProjectId[]>(id: T) {
-  const idParam = id
+function serializeProjectId(id: readonly ProjectId[]) {
+  return id
     .map((id) => (typeof id == 'string' ? id : `${id[0]}:${id[1]}`))
     .join(',')
-  const projects: Promise<(ProjectFetchResult | null)[]> = fetch(
-    `/api/project/${idParam}`
-  ).then((res) => res.json())
+}
+
+function importProjectFromWeb<const T extends readonly ProjectId[]>(id: T) {
+  const idParam = serializeProjectId(id)
+  const controller = new AbortController()
+  const projects: Promise<(ProjectFetchResult | null)[]> = fetch(`/api/project/${idParam}`, {
+    signal: controller.signal,
+  }).then((res) => res.json())
+
+  const projectsComplete = id.map(() => false)
+  function abortIfAllComplete() {
+    if (projectsComplete.every((v) => v)) controller.abort()
+  }
 
   return tupleMap(id, (id, i): ImportedProjectWithId => {
-    const project = projects.then((projects) => projects[i])
+    const project = projects.then((projects) => projects[i]).finally(abortProject)
+
+    const projectController = new AbortController()
+
+    function abortProject() {
+      projectController.abort()
+      setIfComplete()
+    }
+
+    function setIfComplete() {
+      if (projectController.signal.aborted) {
+        projectsComplete[i] = true
+        abortIfAllComplete()
+      }
+    }
+
     return {
       id:
         id.length == 24
@@ -200,6 +278,10 @@ function importProjectFromWeb<const T extends readonly ProjectId[]>(id: T) {
         return project
       }),
       // Currently, our server doesn't provide any assets data
+      cancelProject() {
+        abortProject()
+      },
+      cancelAssets() {},
     }
   })
 }
@@ -214,7 +296,8 @@ function loadProjectsByLink<const T extends ProjectLinkIncludeShorten[]>(
 
   const loadedProjectStates = tupleMap(links, (link, i): ProjectState => {
     const { type, id, url, name } = link
-    const { id: resolvedId, project, assets } = loadedProjects[i]
+    const { id: resolvedId, ...loaded } = loadedProjects[i]
+    const { project } = loaded
 
     const source = new ProjectSource({
       origin: { type: 'url', origin: link },
@@ -229,7 +312,7 @@ function loadProjectsByLink<const T extends ProjectLinkIncludeShorten[]>(
       type == 'shorten' ? resolvedId : undefined
     )
 
-    return new ProjectState({ source, project, assets })
+    return new ProjectState({ source, ...loaded })
   })
 
   return loadedProjectStates
@@ -237,7 +320,8 @@ function loadProjectsByLink<const T extends ProjectLinkIncludeShorten[]>(
 
 function loadProjectsByFile<const T extends File[]>(files: T) {
   const loadedProjectStates = tupleMap(files, (file): ProjectState => {
-    const { project, assets } = importProjectFromOffline(file.stream())
+    const loaded = importProjectFromOffline(file.stream())
+    const { project } = loaded
 
     const source = new ProjectSource({
       origin: { type: 'file', origin: file },
@@ -246,7 +330,7 @@ function loadProjectsByFile<const T extends File[]>(files: T) {
     })
     source.setFromLoadingProject(project)
 
-    return new ProjectState({ source, project, assets })
+    return new ProjectState({ source, ...loaded })
   })
 
   return loadedProjectStates
@@ -270,7 +354,10 @@ export class ProjectListStore {
   }
 
   reloadProject(i: number) {
-    const { type, origin } = this.projects[i]!.source.origin
+    const state = this.projects[i]!
+    const { type, origin } = state.source.origin
+    state.cancelLoad()
+
     const [project] =
       type == 'file'
         ? loadProjectsByFile([origin])
@@ -279,6 +366,9 @@ export class ProjectListStore {
   }
 
   removeProject(i: number) {
+    const state = this.projects[i]!
+    state.cancelLoad()
+
     this.projectsStore.remove(i)
   }
 }
