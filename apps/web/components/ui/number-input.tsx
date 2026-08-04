@@ -9,10 +9,13 @@ export function NumberInput({
   value,
   onValueChange,
   onChange,
+  onFocus,
   onBlur,
   ...props
 }: NumberInputProps) {
+  const [blurred, setBlurred] = useState(true)
   const [controlledValue, setControlledValue] = useState(value)
+  if (blurred && !Object.is(value, controlledValue)) setControlledValue(value)
 
   const handleChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -27,8 +30,17 @@ export function NumberInput({
     [onValueChange, onChange]
   )
 
+  const handleFocus = useCallback(
+    (event: React.FocusEvent<HTMLInputElement>) => {
+      setBlurred(false)
+      onFocus?.(event)
+    },
+    [onFocus]
+  )
+
   const handleBlur = useCallback(
     (event: React.FocusEvent<HTMLInputElement>) => {
+      setBlurred(true)
       setControlledValue(value)
       onBlur?.(event)
     },
@@ -41,6 +53,7 @@ export function NumberInput({
       {...props}
       value={controlledValue ?? ''}
       onChange={handleChange}
+      onFocus={handleFocus}
       onBlur={handleBlur}
     />
   )

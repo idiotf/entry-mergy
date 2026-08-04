@@ -100,7 +100,7 @@ const ProjectItem = observer(
       >
         <AttachmentMedia
           ref={handleRef}
-          variant={thumbUrl ? 'image' : 'icon'}
+          variant={thumbUrl && !thumbError ? 'image' : 'icon'}
           className='cursor-grab touch-none'
         >
           {thumbUrl && !thumbError ? (
