@@ -43,11 +43,9 @@ export async function GET(
   )
 
   try {
-    const projects = await selectProjectMany(
-      client,
-      resolvedId,
-      { signal: req.signal }
-    )
+    const projects = await selectProjectMany(client, resolvedId, {
+      signal: req.signal,
+    })
     return NextResponse.json(
       projects.map((project, i) => {
         const id = resolvedId[i]

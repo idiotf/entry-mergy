@@ -55,7 +55,7 @@ export interface BGMWithData extends WithData {
 /**
  * - `number` First timestamp is setted
  * - `undefined` First timestamp is *not* setted
- * - `null` First timestamp is setted to *empty* 
+ * - `null` First timestamp is setted to *empty*
  */
 type TimestampOptionValue = number | undefined | null
 
@@ -91,7 +91,8 @@ class TimestampsStore {
         const hasStartTimestamp =
           i == 0
             ? this.firstTimestamp !== undefined
-            : this.map.has(prevProject) && !this.isGuessedEndTimestamp.has(prevProject)
+            : this.map.has(prevProject) &&
+              !this.isGuessedEndTimestamp.has(prevProject)
         const hasEndTimestamp = this.map.has(state)
 
         const { start, end } = guessProjectTimestamp(project)
@@ -132,7 +133,7 @@ class DisabledScenesStore {
   get(project: ProjectState) {
     let disabledScenes = this.map.get(project)
     if (!disabledScenes) {
-      this.map.set(project, observable(disabledScenes = new Set()))
+      this.map.set(project, (disabledScenes = observable(new Set<number>())))
     }
 
     return disabledScenes
@@ -428,9 +429,7 @@ function convertPromiseBlobToStream(blob: Promise<Blob>) {
   return new ReadableStream<Uint8Array<ArrayBuffer>>({
     async pull(controller) {
       const data = await (await reader).read()
-      return data.done
-        ? controller.close()
-        : controller.enqueue(data.value)
+      return data.done ? controller.close() : controller.enqueue(data.value)
     },
     async cancel(reason) {
       return (await stream).cancel(reason)
@@ -443,8 +442,14 @@ async function* iterateAllAssets(options: MergeUIOptionsStore) {
     if (!options.thumbnail) throw new OptionError('mustSelectThumbnail')
     if (!options.bgm) throw new OptionError('mustSelectBGM')
 
-    yield { name: options.thumbnail.assetPath, data: options.thumbnail.file.stream() }
-    yield { name: options.bgm.assetPath, data: options.bgm.file.stream() }
+    yield {
+      name: options.thumbnail.assetPath,
+      data: options.thumbnail.file.stream(),
+    }
+    yield {
+      name: options.bgm.assetPath,
+      data: options.bgm.file.stream(),
+    }
   }
 
   for (const { assets } of options.projects) {

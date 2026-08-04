@@ -21,7 +21,13 @@ import {
   CollapsibleTrigger,
 } from '../ui/collapsible'
 import { ProjectList } from './project-list'
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '../ui/field'
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from '../ui/field'
 import {
   Select,
   SelectContent,
@@ -210,7 +216,9 @@ const ProjectOptionsUI = observer(
 )
 
 function SceneListErrorComp() {
-  return <FieldDescription>작품을 불러오는 중 오류가 발생했습니다.</FieldDescription>
+  return (
+    <FieldDescription>작품을 불러오는 중 오류가 발생했습니다.</FieldDescription>
+  )
 }
 
 function SceneListLoadingComp() {
@@ -249,7 +257,11 @@ const SceneListItem = observer(
 
     return (
       <Field orientation='horizontal'>
-        <Checkbox id={checkboxId} checked={enabled} onCheckedChange={setEnabled} />
+        <Checkbox
+          id={checkboxId}
+          checked={enabled}
+          onCheckedChange={setEnabled}
+        />
         <FieldLabel htmlFor={checkboxId}>{scene.name}</FieldLabel>
       </Field>
     )
@@ -266,9 +278,7 @@ const ProjectItemOptionsUI = observer(
     const project = options.projects[i]!
 
     const startTimestamp =
-      i == 0
-        ? options.firstTimestamp ?? undefined
-        : options.timestamps[i - 1]
+      i == 0 ? (options.firstTimestamp ?? undefined) : options.timestamps[i - 1]
     const endTimestamp = options.timestamps[i]
 
     const setStartTimestamp = useCallback(
@@ -359,7 +369,10 @@ export const ProjectMergeUI = observer((props: ProjectMergeUIProps) => {
 
     try {
       const output = await mergeProjectsToOffline(options)
-      downloadBlob(await new Response(output).blob(), `output_${options.mergeMode}.ent`)
+      downloadBlob(
+        await new Response(output).blob(),
+        `output_${options.mergeMode}.ent`
+      )
     } catch (e) {
       if (e instanceof OptionError) return setOptionError(e)
       console.error(e)

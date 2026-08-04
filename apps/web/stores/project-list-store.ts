@@ -17,13 +17,15 @@ async function* convertAssetsToBlob(
   assets: AsyncIterable<Asset>
 ): AsyncIterable<BlobAsset> {
   function convertToBlob(result: IteratorResult<Asset>) {
-    return result.done ? result : {
-      ...result,
-      value: {
-        ...result.value,
-        data: new Response(result.value.data).blob(),
-      },
-    }
+    return result.done
+      ? result
+      : {
+          ...result,
+          value: {
+            ...result.value,
+            data: new Response(result.value.data).blob(),
+          },
+        }
   }
 
   return {
@@ -36,7 +38,7 @@ async function* convertAssetsToBlob(
         },
         async return(value) {
           return convertToBlob(
-            await assetsIterator.return?.(value) || { done: true, value }
+            (await assetsIterator.return?.(value)) || { done: true, value }
           )
         },
         async throw(e) {
@@ -237,9 +239,12 @@ function serializeProjectId(id: readonly ProjectId[]) {
 function importProjectFromWeb<const T extends readonly ProjectId[]>(id: T) {
   const idParam = serializeProjectId(id)
   const controller = new AbortController()
-  const projects: Promise<(ProjectFetchResult | null)[]> = fetch(`/api/project/${idParam}`, {
-    signal: controller.signal,
-  }).then((res) => res.json())
+  const projects: Promise<(ProjectFetchResult | null)[]> = fetch(
+    `/api/project/${idParam}`,
+    {
+      signal: controller.signal,
+    }
+  ).then((res) => res.json())
 
   const projectsComplete = id.map(() => false)
   function abortIfAllComplete() {
@@ -247,7 +252,9 @@ function importProjectFromWeb<const T extends readonly ProjectId[]>(id: T) {
   }
 
   return tupleMap(id, (id, i): ImportedProjectWithId => {
-    const project = projects.then((projects) => projects[i]).finally(abortProject)
+    const project = projects
+      .then((projects) => projects[i])
+      .finally(abortProject)
 
     const projectController = new AbortController()
 

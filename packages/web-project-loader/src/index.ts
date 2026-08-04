@@ -171,8 +171,8 @@ export async function getProjectIdFromShortenURL(
       `Failed to get project id from shorten url 'naver.me/${id}': Location is null`
     )
 
-  const projectId = location?.match(strictProjectRegex)?.[1]
-  if (!projectId)
+  const projectId = location.match(strictProjectRegex)?.[1]
+  if (projectId === undefined)
     throw TypeError(
       `Failed to get project id from shorten url 'naver.me/${id}': Location '${location}' doesn't match strictProjectRegex`
     )
