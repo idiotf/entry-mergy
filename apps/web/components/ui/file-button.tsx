@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import { FileIcon } from 'lucide-react'
 import { Button } from './button'
-import { selectFile, type SelectFileOptions } from '@/utils/select-file'
+import { selectFile, type SelectFileOptions } from '@/utils/common/select-file'
 import { cn } from '@/lib/utils'
 
 export interface FileButtonProps

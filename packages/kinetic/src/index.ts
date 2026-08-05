@@ -64,7 +64,8 @@ function getBaseProject(options: BaseProjectOptions): ProjectJSON {
     'BGM',
     options.bgm.url,
     options.bgm.duration,
-    options.bgm.format
+    options.bgm.format,
+    options.bgm.hash
   )
 
   let mainCode
@@ -137,7 +138,8 @@ function getBaseProject(options: BaseProjectOptions): ProjectJSON {
             width: options.thumbnail.width,
             height: options.thumbnail.height,
           },
-          options.thumbnail.url
+          options.thumbnail.url,
+          options.thumbnail.hash
         ),
       ],
       sounds: [bgm],
@@ -253,28 +255,33 @@ function removeBlocksRecursive(blocks: Block[][], removeBlockTypes: string[]) {
   }
 }
 
-function handleSingleScene(project: ProjectJSON, config: ProcessProjectConfig) {
+function removeUnusedData(project: ProjectJSON, blocksToRemove: string[]) {
   for (const obj of project.objects) {
+    obj.sprite.sounds = []
+
     const script = JSON.parse(obj.script)
     if (!Array.isArray(script)) continue
 
-    removeBlocksRecursive(script, [
-      'choose_project_timer_action',
-      'set_visible_project_timer',
-      'start_neighbor_scene',
-      'stop_run',
-      'sound_something_with_block',
-      'sound_something_second_with_block',
-      'sound_from_to',
-      'sound_something_wait_with_block',
-      'sound_something_second_wait_with_block',
-      'sound_from_to_and_wait',
-      'play_bgm',
-      'stop_bgm',
-    ])
-
+    removeBlocksRecursive(script, blocksToRemove)
     obj.script = JSON.stringify(script)
   }
+}
+
+function handleSingleScene(project: ProjectJSON, config: ProcessProjectConfig) {
+  removeUnusedData(project, [
+    'choose_project_timer_action',
+    'set_visible_project_timer',
+    'start_neighbor_scene',
+    'stop_run',
+    'sound_something_with_block',
+    'sound_something_second_with_block',
+    'sound_from_to',
+    'sound_something_wait_with_block',
+    'sound_something_second_wait_with_block',
+    'sound_from_to_and_wait',
+    'play_bgm',
+    'stop_bgm',
+  ])
 
   const firstScene = project.scenes[0]!
   firstScene.name = String(config.projectIdx + 1)
@@ -294,7 +301,28 @@ function handleMultipleScenes(
   project: ProjectJSON,
   config: ProcessProjectConfig
 ) {
-  // temp - required to remove blocks
+  // temp - support scene transition stable
+  // to support this,
+  //  1. add `__time__ += current timer` to all `reset timer` blocks
+  //  2. replace all sound blocks to `wait until (current timer >= ~~~)`
+  //     for stable sink
+  //  3. to make it more stable,
+  //     add post task code (scene transition code) to all scenes
+
+  removeUnusedData(project, [
+    // 'choose_project_timer_action',
+    'set_visible_project_timer',
+    'start_neighbor_scene',
+    'stop_run',
+    'sound_something_with_block',
+    'sound_something_second_with_block',
+    'sound_from_to',
+    // 'sound_something_wait_with_block',
+    // 'sound_something_second_wait_with_block',
+    // 'sound_from_to_and_wait',
+    'play_bgm',
+    'stop_bgm',
+  ])
 
   const firstScene = project.scenes[0]!
   const lastScene = project.scenes[project.scenes.length - 1]!

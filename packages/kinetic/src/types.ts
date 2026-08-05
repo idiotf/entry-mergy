@@ -2,6 +2,7 @@ import type { MergeOptions } from '@entry-mergy/core'
 
 interface Asset {
   url: string
+  hash: string
   format: string
 }
 

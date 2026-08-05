@@ -197,14 +197,30 @@ export interface Dimension {
 }
 
 export class Picture extends IdObject {
-  filename?: string
   thumbUrl?
 
+  constructor(
+    name: string,
+    imageType: string,
+    dimension: Dimension,
+    fileurl: string | undefined | null,
+    filename: string
+  )
+  /**
+   * @deprecated It doesn't work correctly for offline project uploaded to web
+   */
+  constructor(
+    name: string,
+    imageType: string,
+    dimension: Dimension,
+    fileurl?: string | undefined | null,
+  )
   constructor(
     public name: string,
     public imageType: string,
     public dimension: Dimension,
-    public fileurl?: string
+    public fileurl?: string,
+    public filename?: string
   ) {
     super()
     this.thumbUrl = fileurl
@@ -213,10 +229,27 @@ export class Picture extends IdObject {
 
 export class Sound extends IdObject {
   constructor(
+    name: string,
+    fileurl: string | undefined | null,
+    duration: number,
+    ext: string,
+    filename: string
+  )
+  /**
+   * @deprecated It doesn't work correctly for offline project uploaded to web
+   */
+  constructor(
+    name: string,
+    fileurl: string,
+    duration: number,
+    ext: string
+  )
+  constructor(
     public name: string,
-    public fileurl: string,
+    public fileurl: string | undefined | null,
     public duration: number,
-    public ext: string
+    public ext: string,
+    public filename?: string
   ) {
     super()
   }

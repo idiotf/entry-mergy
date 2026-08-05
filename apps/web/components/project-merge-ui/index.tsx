@@ -5,15 +5,14 @@ import { useCallback, useId, useMemo, useState } from 'react'
 import { ChevronRight, ImageIcon, Music4Icon } from 'lucide-react'
 import { observer } from 'mobx-react-lite'
 import { cn } from '@/lib/utils'
+import { FastSuspense } from '../fast-suspense'
 import { LoadableButton } from '@/components/ui/loadable-button'
 import { ErrorMessage } from '@/components/ui/error-message'
 import {
   mergeProjectsToOffline,
   OptionError,
-  type MergeMode,
-  type MergeUIOptionsStore,
-} from '@/stores/merge-options'
-import { downloadBlob } from '@/utils/download'
+} from '@/utils/merge'
+import { downloadBlob } from '@/utils/common/download'
 import { Button } from '../ui/button'
 import {
   Collapsible,
@@ -42,7 +41,10 @@ import { Switch } from '../ui/switch'
 import { ListInput } from '../ui/list-input'
 import { Checkbox } from '../ui/checkbox'
 import type { Scene } from '@entry-mergy/entry-utils/types'
-import { FastSuspense } from '../fast-suspense'
+import type {
+  MergeMode,
+  MergeUIOptionsStore,
+} from '@/stores/merge-options'
 
 interface ProjectOptionsUIProps {
   options: MergeUIOptionsStore

@@ -10,7 +10,7 @@ import {
   XIcon,
 } from 'lucide-react'
 import { observer } from 'mobx-react-lite'
-import { preventDefault } from '@/utils/prevent-default'
+import { preventDefault } from '@/utils/common/prevent-default'
 import {
   Attachment,
   AttachmentAction,
@@ -21,7 +21,7 @@ import {
   AttachmentTitle,
 } from '@/components/ui/attachment'
 import { ErrorMessage } from '@/components/ui/error-message'
-import { getDroppedUrl } from '@/utils/get-dropped-url'
+import { getDroppedUrl } from '@/utils/common/get-dropped-url'
 import {
   getProjectLinksIncludeShorten,
   type ProjectLinkIncludeShorten,
