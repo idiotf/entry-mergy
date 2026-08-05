@@ -78,6 +78,18 @@ function copyRef<T extends IdObject>(
   )
 }
 
+function changeSrcId<T extends IdObject>(
+  map: Map<string, string>,
+  dst: T[],
+  src: T[],
+  prefix = ''
+) {
+  const idMap = new Map(dst.map((v) => [v.id, v]))
+  for (const obj of src) {
+    if (idMap.has(obj.id)) changeIdUnique(map, obj, prefix)
+  }
+}
+
 const filterVariable = (variable: Variable, preserveVar: string[]) =>
   !preserveVar.includes(variable.name) &&
   !preserveVarTypes.includes(variable.variableType)
@@ -129,13 +141,6 @@ export function mergeProject(
   copyRef(map, dst.variables, filteredVariables)
   copyRef(
     map,
-    dst.functions,
-    src.functions,
-    shareFunctions ? checkMustShareFunc : undefined,
-    funcPrefix
-  )
-  copyRef(
-    map,
     dst.objects,
     src.objects.map((obj) => {
       const scene = map.get(obj.scene)
@@ -144,8 +149,17 @@ export function mergeProject(
     })
   )
 
+  changeSrcId(map, dst.functions, src.functions, funcPrefix)
   for (const func of src.functions)
     func.content = parseScript(map, func.content)
+
+  copyRef(
+    map,
+    dst.functions,
+    src.functions,
+    shareFunctions ? checkMustShareFunc : undefined,
+    funcPrefix
+  )
 
   for (const obj of src.objects) obj.script = parseScript(map, obj.script)
 
