@@ -43,7 +43,7 @@ function parseScript(map: Map<string, string>, script: string) {
 }
 
 function changeIdUnique<T extends IdObject>(
-  map: Map<string, string>,
+  idCollisionMap: Map<string, string>,
   obj: T,
   prefix = ''
 ) {
@@ -51,50 +51,46 @@ function changeIdUnique<T extends IdObject>(
   const newId = generateHash()
 
   obj.id = newId
-  map.set(prefix + prevId, prefix + newId)
+  idCollisionMap.set(prefix + prevId, prefix + newId)
   return obj
 }
 
+type MustShareDecider<T> = (
+  dstObj: T,
+  srcObj: T,
+  dstMap: Map<string, T>,
+  srcMap: Map<string, T>
+) => boolean
+
 function copyRef<T extends IdObject>(
-  map: Map<string, string>,
+  idCollisionMap: Map<string, string>,
   dst: T[],
   src: T[],
-  mustShare?: (dstObj: T, srcObj: T) => boolean,
+  mustShare?: MustShareDecider<T>,
   prefix = ''
 ) {
-  const idMap = new Map(dst.map((v) => [v.id, v]))
+  const dstMap = new Map(dst.map((v) => [v.id, v]))
+  const srcMap = new Map(src.map((v) => [v.id, v]))
 
   if (mustShare) {
     src = src.filter((srcObj) => {
-      const dstObj = idMap.get(srcObj.id)
-      return !dstObj || !mustShare(dstObj, srcObj)
+      const dstObj = dstMap.get(srcObj.id)
+      return !dstObj || !mustShare(dstObj, srcObj, dstMap, srcMap)
     })
   }
 
   dst.push(
     ...src.map((obj) =>
-      idMap.has(obj.id) ? changeIdUnique(map, obj, prefix) : obj
+      dstMap.has(obj.id) ? changeIdUnique(idCollisionMap, obj, prefix) : obj
     )
   )
-}
-
-function changeSrcId<T extends IdObject>(
-  map: Map<string, string>,
-  dst: T[],
-  src: T[],
-  prefix = ''
-) {
-  const idMap = new Map(dst.map((v) => [v.id, v]))
-  for (const obj of src) {
-    if (idMap.has(obj.id)) changeIdUnique(map, obj, prefix)
-  }
 }
 
 const filterVariable = (variable: Variable, preserveVar: string[]) =>
   !preserveVar.includes(variable.name) &&
   !preserveVarTypes.includes(variable.variableType)
 
-function checkMustShareFunc(dst: Func, src: Func) {
+function seemsLikeSharableFunc(dst: Func, src: Func) {
   if (dst.content != src.content) return false
 
   try {
@@ -114,6 +110,69 @@ function checkMustShareFunc(dst: Func, src: Func) {
   }
 
   return true
+}
+
+function getDependenciesOf(func: Func) {
+  try {
+    const content: unknown = JSON.parse(func.content)
+    return (function tree2(content) {
+      if (!Array.isArray(content)) return []
+      return content.flatMap(function tree(thread: unknown) {
+        if (!Array.isArray(thread)) return []
+        return thread.flatMap(function getBlockDeps(block: unknown) {
+          const deps: string[] = []
+          if (!isObject(block)) return deps
+
+          if (
+            'id' in block &&
+            typeof block.id == 'string' &&
+            block.id.startsWith(funcPrefix)
+          ) deps.push(block.id)
+
+          if (
+            'params' in block &&
+            Array.isArray(block.params)
+          ) deps.push(...block.params.flatMap(tree))
+
+          if (
+            'statements' in block &&
+            Array.isArray(block.statements)
+          ) deps.push(...block.statements.flatMap(tree2))
+
+          return deps
+        })
+      })
+    })(content)
+  } catch {
+    return []
+  }
+}
+
+function checkMustShareFunc(
+  memo: WeakMap<Func, boolean>,
+  dst: Func,
+  src: Func,
+  dstMap: Map<string, Func>,
+  srcMap: Map<string, Func>,
+  visited = new WeakSet<Func>(),
+): boolean {
+  const memoized = memo.get(src)
+  if (memoized !== undefined) return memoized
+
+  if (visited.has(src)) return true
+  visited.add(src)
+
+  const canShare =
+    seemsLikeSharableFunc(dst, src) &&
+    getDependenciesOf(src).every((node) => {
+      const dst = dstMap.get(node)
+      const src = srcMap.get(node)
+      return dst && src
+        ? checkMustShareFunc(memo, dst, src, dstMap, srcMap, visited)
+        : true
+    })
+  memo.set(src, canShare)
+  return canShare
 }
 
 export interface MergeOptions {
@@ -149,7 +208,6 @@ export function mergeProject(
     })
   )
 
-  changeSrcId(map, dst.functions, src.functions, funcPrefix)
   for (const func of src.functions)
     func.content = parseScript(map, func.content)
 
@@ -157,9 +215,12 @@ export function mergeProject(
     map,
     dst.functions,
     src.functions,
-    shareFunctions ? checkMustShareFunc : undefined,
+    shareFunctions ? checkMustShareFunc.bind(null, new WeakMap()) : undefined,
     funcPrefix
   )
+
+  for (const func of src.functions)
+    func.content = parseScript(map, func.content)
 
   for (const obj of src.objects) obj.script = parseScript(map, obj.script)
 
