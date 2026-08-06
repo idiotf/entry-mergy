@@ -16,6 +16,7 @@
     "@dnd-kit/react": "^0.5.0",
     "@entry-mergy/core": "workspace:*",
     "@entry-mergy/entry-api-client": "workspace:*",
+    "@entry-mergy/entry-project-optimizer": "workspace:*",
     "@entry-mergy/entry-utils": "workspace:*",
     "@entry-mergy/kinetic": "workspace:*",
     "@entry-mergy/media-metadata": "workspace:*",

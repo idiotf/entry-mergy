@@ -213,7 +213,7 @@ export class Picture extends IdObject {
     name: string,
     imageType: string,
     dimension: Dimension,
-    fileurl?: string | undefined | null,
+    fileurl?: string | undefined | null
   )
   constructor(
     public name: string,
@@ -238,12 +238,7 @@ export class Sound extends IdObject {
   /**
    * @deprecated It doesn't work correctly for offline project uploaded to web
    */
-  constructor(
-    name: string,
-    fileurl: string,
-    duration: number,
-    ext: string
-  )
+  constructor(name: string, fileurl: string, duration: number, ext: string)
   constructor(
     public name: string,
     public fileurl: string | undefined | null,

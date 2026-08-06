@@ -11,7 +11,7 @@
 ## kinetic
 
 - `analyzeProject` 함수 구현
-- `handleMultipleScenes` 함수 구현 (불필요한 블록 제거 부분)
+- `handleMultipleScenes` 함수 구현 (초시계 초기화하기 이전에 `__time__` += 초시계 값 추가)
 - `guessProjectTimestamp` 함수 구현
 
 ## offline-project-loader

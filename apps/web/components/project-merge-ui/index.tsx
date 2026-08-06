@@ -8,10 +8,7 @@ import { cn } from '@/lib/utils'
 import { FastSuspense } from '../fast-suspense'
 import { LoadableButton } from '@/components/ui/loadable-button'
 import { ErrorMessage } from '@/components/ui/error-message'
-import {
-  mergeProjectsToOffline,
-  OptionError,
-} from '@/utils/merge'
+import { mergeProjectsToOffline, OptionError } from '@/utils/merge'
 import { downloadBlob } from '@/utils/common/download'
 import { Button } from '../ui/button'
 import {
@@ -41,10 +38,7 @@ import { Switch } from '../ui/switch'
 import { ListInput } from '../ui/list-input'
 import { Checkbox } from '../ui/checkbox'
 import type { Scene } from '@entry-mergy/entry-utils/types'
-import type {
-  MergeMode,
-  MergeUIOptionsStore,
-} from '@/stores/merge-options'
+import type { MergeMode, MergeUIOptionsStore } from '@/stores/merge-options'
 
 interface ProjectOptionsUIProps {
   options: MergeUIOptionsStore

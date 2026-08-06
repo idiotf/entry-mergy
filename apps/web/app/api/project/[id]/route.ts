@@ -5,6 +5,7 @@ import {
   type ProjectId,
 } from '@entry-mergy/entry-api-client'
 import { getProjectIdFromShortenURL } from '@entry-mergy/web-project-loader'
+import { minifyProject } from '@entry-mergy/entry-project-optimizer'
 
 const commonIdRegex = /^[\da-f]{24}$/
 const groupIdRegex = /^([\da-f]{24}):([\da-f]{24})$/
@@ -46,10 +47,16 @@ export async function GET(
     const projects = await selectProjectMany(client, resolvedId, {
       signal: req.signal,
     })
+
     return NextResponse.json(
       projects.map((project, i) => {
         const id = resolvedId[i]
-        return id == null ? null : { id, project }
+        if (id === null || project === null) return null
+
+        return {
+          id,
+          project: minifyProject(project),
+        }
       })
     )
   } catch (e) {

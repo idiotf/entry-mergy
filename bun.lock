@@ -15,6 +15,7 @@
         "@dnd-kit/react": "^0.5.0",
         "@entry-mergy/core": "workspace:*",
         "@entry-mergy/entry-api-client": "workspace:*",
+        "@entry-mergy/entry-project-optimizer": "workspace:*",
         "@entry-mergy/entry-utils": "workspace:*",
         "@entry-mergy/kinetic": "workspace:*",
         "@entry-mergy/media-metadata": "workspace:*",
@@ -113,6 +114,26 @@
         "typescript": "^5",
       },
     },
+    "packages/entry-project-optimizer": {
+      "name": "@entry-mergy/entry-project-optimizer",
+      "version": "0.0.1",
+      "dependencies": {
+        "@entry-mergy/entry-utils": "workspace:*",
+      },
+      "devDependencies": {
+        "@eslint/js": "^10.0.1",
+        "@types/node": "^26.1.1",
+        "eslint": "^10.5.0",
+        "jiti": "^2.7.0",
+        "prettier": "^3.8.3",
+        "publint": "^0.3.21",
+        "tsdown": "^0.22.5",
+        "typescript-eslint": "^8.59.2",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
     "packages/entry-utils": {
       "name": "@entry-mergy/entry-utils",
       "version": "0.0.1",
@@ -123,7 +144,6 @@
       "devDependencies": {
         "@eslint/js": "^10.0.1",
         "@types/node": "^26.1.1",
-        "@types/tar-js": "^0.3.5",
         "eslint": "^10.5.0",
         "jiti": "^2.7.0",
         "prettier": "^3.8.3",
@@ -209,14 +229,10 @@
       "version": "0.0.1",
       "dependencies": {
         "@entry-mergy/entry-utils": "workspace:*",
-        "tar-js": "^0.3.0",
-        "tar-stream": "^3.2.0",
       },
       "devDependencies": {
         "@eslint/js": "^10.0.1",
         "@types/node": "^26.1.1",
-        "@types/tar-js": "^0.3.5",
-        "@types/tar-stream": "^3.1.4",
         "eslint": "^10.5.0",
         "globals": "^17.6.0",
         "jiti": "^2.7.0",
@@ -254,8 +270,6 @@
         "@entry-mergy/entry-api-client": "workspace:*",
         "@entry-mergy/entry-utils": "workspace:*",
         "@entry-mergy/project-loader-types": "workspace:*",
-        "node-html-parser": "^9.0.0",
-        "tough-cookie": "^6.0.2",
         "zod": "^4.4.3",
       },
       "devDependencies": {
@@ -366,6 +380,8 @@
     "@entry-mergy/core": ["@entry-mergy/core@workspace:packages/core"],
 
     "@entry-mergy/entry-api-client": ["@entry-mergy/entry-api-client@workspace:packages/entry-api-client"],
+
+    "@entry-mergy/entry-project-optimizer": ["@entry-mergy/entry-project-optimizer@workspace:packages/entry-project-optimizer"],
 
     "@entry-mergy/entry-utils": ["@entry-mergy/entry-utils@workspace:packages/entry-utils"],
 

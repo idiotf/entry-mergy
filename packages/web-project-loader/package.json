@@ -46,8 +46,6 @@
     "@entry-mergy/entry-api-client": "workspace:*",
     "@entry-mergy/entry-utils": "workspace:*",
     "@entry-mergy/project-loader-types": "workspace:*",
-    "node-html-parser": "^9.0.0",
-    "tough-cookie": "^6.0.2",
     "zod": "^4.4.3"
   }
 }

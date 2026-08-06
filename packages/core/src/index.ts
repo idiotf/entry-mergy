@@ -112,37 +112,40 @@ function seemsLikeSharableFunc(dst: Func, src: Func) {
   return true
 }
 
-function getDependenciesOf(func: Func) {
+function getScriptDeps(script: unknown) {
+  if (!Array.isArray(script)) return []
+  return script.flatMap(getThreadDeps)
+}
+
+function getThreadDeps(thread: unknown) {
+  if (!Array.isArray(thread)) return []
+  return thread.flatMap(getBlockDeps)
+}
+
+function getBlockDeps(block: unknown) {
+  const deps: string[] = []
+  if (!isObject(block)) return deps
+
+  if (
+    'id' in block &&
+    typeof block.id == 'string' &&
+    block.id.startsWith(funcPrefix)
+  )
+    deps.push(block.id)
+
+  if ('params' in block && Array.isArray(block.params))
+    deps.push(...block.params.flatMap(getThreadDeps))
+
+  if ('statements' in block && Array.isArray(block.statements))
+    deps.push(...block.statements.flatMap(getScriptDeps))
+
+  return deps
+}
+
+function getFuncDeps(func: Func) {
   try {
     const content: unknown = JSON.parse(func.content)
-    return (function tree2(content) {
-      if (!Array.isArray(content)) return []
-      return content.flatMap(function tree(thread: unknown) {
-        if (!Array.isArray(thread)) return []
-        return thread.flatMap(function getBlockDeps(block: unknown) {
-          const deps: string[] = []
-          if (!isObject(block)) return deps
-
-          if (
-            'id' in block &&
-            typeof block.id == 'string' &&
-            block.id.startsWith(funcPrefix)
-          ) deps.push(block.id)
-
-          if (
-            'params' in block &&
-            Array.isArray(block.params)
-          ) deps.push(...block.params.flatMap(tree))
-
-          if (
-            'statements' in block &&
-            Array.isArray(block.statements)
-          ) deps.push(...block.statements.flatMap(tree2))
-
-          return deps
-        })
-      })
-    })(content)
+    return getScriptDeps(content)
   } catch {
     return []
   }
@@ -154,7 +157,7 @@ function checkMustShareFunc(
   src: Func,
   dstMap: Map<string, Func>,
   srcMap: Map<string, Func>,
-  visited = new WeakSet<Func>(),
+  visited = new WeakSet<Func>()
 ): boolean {
   const memoized = memo.get(src)
   if (memoized !== undefined) return memoized
@@ -164,7 +167,7 @@ function checkMustShareFunc(
 
   const canShare =
     seemsLikeSharableFunc(dst, src) &&
-    getDependenciesOf(src).every((node) => {
+    getFuncDeps(src).every((node) => {
       const dst = dstMap.get(node)
       const src = srcMap.get(node)
       return dst && src

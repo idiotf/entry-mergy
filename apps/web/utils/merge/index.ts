@@ -1,7 +1,14 @@
 import { Project, type MergeOptions, mergeAllAsync } from '@entry-mergy/core'
 import { mergeAllKineticAsync } from '@entry-mergy/kinetic'
-import { getImageFileurlFrom, getSoundFileurlFrom, exportProjectToOffline } from '@entry-mergy/offline-project-loader'
-import type { MergeUIOptionsStore, MergeUICoreOptions } from '@/stores/merge-options'
+import {
+  getImageFileurlFrom,
+  getSoundFileurlFrom,
+  exportProjectToOffline,
+} from '@entry-mergy/offline-project-loader'
+import type {
+  MergeUIOptionsStore,
+  MergeUICoreOptions,
+} from '@/stores/merge-options'
 
 export type OptionErrorTypes = typeof optionErrorTypes
 export type OptionErrorType = keyof OptionErrorTypes

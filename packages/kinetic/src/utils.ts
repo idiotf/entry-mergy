@@ -5,6 +5,7 @@ export interface Timestamp {
   end: number | null
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function guessProjectTimestamp(project: Project): Timestamp {
   // temp
   return {

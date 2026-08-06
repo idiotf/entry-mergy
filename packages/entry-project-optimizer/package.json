@@ -1,12 +1,22 @@
 {
-  "name": "@entry-mergy/project-loader-types",
+  "name": "@entry-mergy/entry-project-optimizer",
   "version": "0.0.1",
   "type": "module",
   "files": [
     "dist"
   ],
-  "exports": "./src/index.ts",
+  "main": "./src/index.ts",
   "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    },
+    "./binary": {
+      "types": "./src/binary.ts",
+      "import": "./src/binary.ts"
+    }
+  },
   "engines": {
     "node": ">=20"
   },
@@ -14,7 +24,6 @@
     "@eslint/js": "^10.0.1",
     "@types/node": "^26.1.1",
     "eslint": "^10.5.0",
-    "globals": "^17.6.0",
     "jiti": "^2.7.0",
     "prettier": "^3.8.3",
     "publint": "^0.3.21",
@@ -26,9 +35,9 @@
   },
   "scripts": {
     "lint": "eslint",
-    "format": "prettier -w '**/*.ts'",
+    "format": "prettier -w 'src/**/*.ts'",
     "typecheck": "tsc --noEmit",
-    "build": "tsdown --publint",
+    "build": "tsdown src/index src/binary --publint",
     "prepack": "bun scripts/prepack && bun run build",
     "postpack": "bun scripts/postpack"
   },
