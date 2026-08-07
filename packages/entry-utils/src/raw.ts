@@ -1,7 +1,11 @@
 import type { EntryObject } from './types'
 
 export function getScriptOf(obj: EntryObject): unknown {
-  if (typeof obj.script == 'string') return JSON.parse(obj.script)
+  if (typeof obj.script == 'string') {
+    try {
+      return JSON.parse(obj.script)
+    } catch { /* empty */ }
+  }
   return obj.script
 }
 

@@ -4,7 +4,6 @@ import { deepCopy } from '@entry-mergy/common-utils'
 
 import {
   AnswerVariable,
-  type Block,
   EntryObject,
   Func,
   Picture,
@@ -247,13 +246,31 @@ function removeEmptyScenes(project: ProjectJSON) {
   return project
 }
 
-function removeBlocksRecursive(blocks: Block[][], removeBlockTypes: string[]) {
-  for (const thread of blocks) {
-    for (let i = 0; i < thread.length; ++i) {
-      const block = thread[i]!
-      if (removeBlockTypes.includes(block.type)) thread.splice(i--, 1)
-    }
+function removeBlocksInThread(thread: unknown, blocksToRemove: string[]) {
+  if (!Array.isArray(thread)) return
+
+  for (let i = 0; i < thread.length; ++i) {
+    const block: unknown = thread[i]!
+    if (typeof block != 'object' || block === null) continue
+
+    if (
+      'type' in block &&
+      typeof block.type == 'string' &&
+      blocksToRemove.includes(block.type)
+    )
+      thread.splice(i--, 1)
+
+    if ('params' in block)
+      removeBlocksInThread(block.params, blocksToRemove)
+
+    if ('statements' in block)
+      removeBlocksRecursive(block.statements, blocksToRemove)
   }
+}
+
+function removeBlocksRecursive(script: unknown, blocksToRemove: string[]) {
+  if (!Array.isArray(script)) return
+  for (const thread of script) removeBlocksInThread(thread, blocksToRemove)
 }
 
 function removeUnusedData(project: ProjectJSON, blocksToRemove: string[]) {
@@ -261,10 +278,16 @@ function removeUnusedData(project: ProjectJSON, blocksToRemove: string[]) {
     obj.sprite.sounds = []
 
     const script = getScriptOf(obj)
-    if (!Array.isArray(script)) continue
-
     removeBlocksRecursive(script, blocksToRemove)
     setScriptOf(obj, script)
+  }
+
+  for (const func of project.functions) {
+    try {
+      const content = JSON.parse(func.content)
+      removeBlocksRecursive(content, blocksToRemove)
+      func.content = JSON.stringify(content)
+    } catch { /* empty */ }
   }
 }
 

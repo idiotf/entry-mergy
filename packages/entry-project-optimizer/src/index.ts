@@ -53,9 +53,11 @@ export function minifyProject(project: Project) {
   })
 
   project.functions.forEach((func) => {
-    const content = JSON.parse(func.content)
-    parseScript(content)
-    func.content = JSON.stringify(content)
+    try {
+      const content = JSON.parse(func.content)
+      parseScript(content)
+      func.content = JSON.stringify(content)
+    } catch { /* empty */ }
     return func
   })
 

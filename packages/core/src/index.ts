@@ -181,6 +181,11 @@ function checkMustShareFunc(
   return canShare
 }
 
+function replaceFuncRef(map: Map<string, string>, functions: Func[]) {
+  for (const func of functions)
+    func.content = JSON.stringify(parseScript(map, JSON.parse(func.content)))
+}
+
 export interface MergeOptions {
   preserveVar?: string[] | undefined
   shareFunctions?: boolean | undefined
@@ -214,9 +219,7 @@ export function mergeProject(
     })
   )
 
-  for (const func of src.functions)
-    func.content = JSON.stringify(parseScript(map, func.content))
-
+  replaceFuncRef(map, src.functions)
   copyRef(
     map,
     dst.functions,
@@ -224,9 +227,7 @@ export function mergeProject(
     shareFunctions ? checkMustShareFunc.bind(null, new WeakMap()) : undefined,
     funcPrefix
   )
-
-  for (const func of src.functions)
-    func.content = JSON.stringify(parseScript(map, func.content))
+  replaceFuncRef(map, src.functions)
 
   for (const obj of src.objects)
     setScriptOf(obj, parseScript(map, getScriptOf(obj)))
