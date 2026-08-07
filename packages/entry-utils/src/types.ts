@@ -8,8 +8,11 @@ export const IdObject = z.looseObject({
   id: z.string(),
 }) satisfies z.ZodMiniType<IdObject>
 
+export type Script = unknown
+export const Script = z.unknown()
+
 export interface EntryObject extends IdObject {
-  script: string
+  script: Script
   scene: string
   sprite: {
     pictures: IdObject[]
@@ -19,7 +22,7 @@ export interface EntryObject extends IdObject {
 
 export const EntryObject = z.looseObject({
   ...IdObject.shape,
-  script: z.string(),
+  script: Script,
   scene: z.string(),
   sprite: z.looseObject({
     pictures: z.array(IdObject),

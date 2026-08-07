@@ -1,4 +1,5 @@
 import { generateHash } from '@entry-mergy/common-utils'
+import { setScriptOf } from './raw'
 import { sound } from './blocks'
 import type { Project as ProjectJSON } from './types'
 
@@ -281,7 +282,7 @@ export type RotateMethod = 'free' | 'vertical' | 'none'
 
 export class EntryObject extends IdObject {
   scene
-  script
+  script: unknown
   selectedPictureId?: string | null
 
   constructor(
@@ -302,7 +303,7 @@ export class EntryObject extends IdObject {
       selectedPicture == null
         ? null
         : sprite.pictures[selectedPicture]?.id || null
-    this.script = JSON.stringify(script)
+    setScriptOf(this, script)
   }
 }
 

@@ -1,3 +1,4 @@
+import { getScriptOf } from '@entry-mergy/entry-utils/raw'
 import type { Project } from '@entry-mergy/entry-utils/types'
 
 function isDictionary(obj: unknown): obj is Record<string, unknown> {
@@ -45,7 +46,7 @@ function parseBlock(block: unknown, i?: number) {
 
 export function minifyProject(project: Project) {
   project.objects.forEach((obj) => {
-    const script = JSON.parse(obj.script)
+    const script = getScriptOf(obj)
     parseScript(script)
     obj.script = script
     return obj

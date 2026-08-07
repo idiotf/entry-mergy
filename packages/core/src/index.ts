@@ -1,4 +1,5 @@
 import { isObject, generateHash, deepCopy } from '@entry-mergy/common-utils'
+import { getScriptOf, setScriptOf } from '@entry-mergy/entry-utils/raw'
 import {
   Project,
   type IdObject,
@@ -12,8 +13,10 @@ const funcPrefix = 'func_'
 const primitiveBlocks = ['number', 'angle', 'text']
 const preserveVarTypes = ['answer', 'timer']
 
-function parseBlocks(map: Map<string, string>, blocks: unknown[]) {
-  blocks.forEach((block, i) => {
+function parseBlocks(map: Map<string, string>, blocks: unknown) {
+  if (!Array.isArray(blocks)) return
+
+  blocks.forEach((block: unknown, i) => {
     if (typeof block == 'string') {
       const id = map.get(block)
       if (id) blocks[i] = id
@@ -36,10 +39,10 @@ function parseBlocks(map: Map<string, string>, blocks: unknown[]) {
   })
 }
 
-function parseScript(map: Map<string, string>, script: string) {
-  const content = JSON.parse(script)
+function parseScript(map: Map<string, string>, content: unknown) {
+  if (!Array.isArray(content)) return content
   for (const statement of content) parseBlocks(map, statement)
-  return JSON.stringify(content)
+  return content
 }
 
 function changeIdUnique<T extends IdObject>(
@@ -212,7 +215,7 @@ export function mergeProject(
   )
 
   for (const func of src.functions)
-    func.content = parseScript(map, func.content)
+    func.content = JSON.stringify(parseScript(map, func.content))
 
   copyRef(
     map,
@@ -223,9 +226,10 @@ export function mergeProject(
   )
 
   for (const func of src.functions)
-    func.content = parseScript(map, func.content)
+    func.content = JSON.stringify(parseScript(map, func.content))
 
-  for (const obj of src.objects) obj.script = parseScript(map, obj.script)
+  for (const obj of src.objects)
+    setScriptOf(obj, parseScript(map, getScriptOf(obj)))
 
   for (const variable of filteredVariables) {
     const id = variable.object && map.get(variable.object)

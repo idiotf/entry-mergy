@@ -44,6 +44,7 @@ import type {
   Thumbnail,
   WaitForBGMOptions,
 } from './types'
+import { getScriptOf, setScriptOf } from '@entry-mergy/entry-utils/raw'
 
 export { ProjectJSON as Project }
 export * from './types'
@@ -259,11 +260,11 @@ function removeUnusedData(project: ProjectJSON, blocksToRemove: string[]) {
   for (const obj of project.objects) {
     obj.sprite.sounds = []
 
-    const script = JSON.parse(obj.script)
+    const script = getScriptOf(obj)
     if (!Array.isArray(script)) continue
 
     removeBlocksRecursive(script, blocksToRemove)
-    obj.script = JSON.stringify(script)
+    setScriptOf(obj, script)
   }
 }
 
@@ -289,12 +290,12 @@ function handleSingleScene(project: ProjectJSON, config: ProcessProjectConfig) {
   const firstObject = project.objects.find((v) => v.scene == firstScene.id)
   if (!firstObject) return
 
-  const script = JSON.parse(firstObject.script)
+  const script = getScriptOf(firstObject)
   if (!Array.isArray(script)) return
 
   const { preTaskCode, postTaskCode } = getTaskCodes(project, config)
   script.unshift(whenSceneStarts([...preTaskCode, ...postTaskCode]))
-  firstObject.script = JSON.stringify(script)
+  setScriptOf(firstObject, script)
 }
 
 function handleMultipleScenes(
@@ -335,8 +336,8 @@ function handleMultipleScenes(
   const lastSceneObj = project.objects.find((v) => v.scene == lastScene.id)
   if (!firstSceneObj || !lastSceneObj) return
 
-  const firstSceneScript = JSON.parse(firstSceneObj.script)
-  const lastSceneScript = JSON.parse(lastSceneObj.script)
+  const firstSceneScript = getScriptOf(firstSceneObj)
+  const lastSceneScript = getScriptOf(lastSceneObj)
   if (!Array.isArray(firstSceneScript) || !Array.isArray(lastSceneScript))
     return
 
@@ -344,8 +345,8 @@ function handleMultipleScenes(
   firstSceneScript.unshift(whenSceneStarts(preTaskCode))
   lastSceneScript.unshift(whenSceneStarts(postTaskCode))
 
-  firstSceneObj.script = JSON.stringify(firstSceneScript)
-  lastSceneObj.script = JSON.stringify(lastSceneScript)
+  setScriptOf(firstSceneObj, firstSceneScript)
+  setScriptOf(lastSceneObj, lastSceneScript)
 }
 
 interface ProcessProjectConfig {

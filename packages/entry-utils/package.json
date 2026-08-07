@@ -16,6 +16,10 @@
       "types": "./src/blocks.ts",
       "import": "./src/blocks.ts"
     },
+    "./raw": {
+      "types": "./src/raw.ts",
+      "import": "./src/raw.ts"
+    },
     "./types": {
       "types": "./src/types.ts",
       "import": "./src/types.ts"
@@ -41,7 +45,7 @@
     "lint": "eslint",
     "format": "prettier -w 'src/**/*.ts'",
     "typecheck": "tsc --noEmit",
-    "build": "tsdown src/index src/blocks src/types --publint",
+    "build": "tsdown src/index src/blocks src/raw src/types --publint",
     "prepack": "bun scripts/prepack && bun run build",
     "postpack": "bun scripts/postpack"
   },
