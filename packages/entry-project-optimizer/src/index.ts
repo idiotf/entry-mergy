@@ -15,31 +15,29 @@ function parseThread(thread: unknown) {
   thread.forEach(parseBlock)
 }
 
-function parseBlock(block: unknown, i?: number) {
+function parseBlock(block: unknown) {
   if (!isDictionary(block)) return
 
-  delete block.id
-  if (block.assemble === true) delete block.assemble
-  if (block.copyable === true) delete block.copyable
-  if (block.deletable === 1) delete block.deletable
-  if (block.emphasized === false) delete block.emphasized
-  if (block.movable === null) delete block.movable
-  if (block.readOnly === null) delete block.readOnly
+  block.id = undefined
+  if (block.assemble === true) block.assemble = undefined
+  if (block.copyable === true) block.copyable = undefined
+  if (block.deletable === 1) block.deletable = undefined
+  if (block.emphasized === false) block.emphasized = undefined
+  if (block.movable === null) block.movable = undefined
+  if (block.readOnly === null) block.readOnly = undefined
   if (Array.isArray(block.extensions) && block.extensions.length == 0)
-    delete block.extensions
+    block.extensions = undefined
 
-  if (i != 0) {
-    delete block.x
-    delete block.y
-  }
+  block.x ||= undefined
+  block.y ||= undefined
 
   if (Array.isArray(block.params)) {
-    if (block.params.length == 0) delete block.params
+    if (block.params.length == 0) block.params = undefined
     else parseThread(block.params)
   }
 
   if (Array.isArray(block.statements)) {
-    if (block.statements.length == 0) delete block.statements
+    if (block.statements.length == 0) block.statements = undefined
     else parseScript(block.statements)
   }
 }
@@ -49,7 +47,6 @@ export function minifyProject(project: Project) {
     const script = getScriptOf(obj)
     parseScript(script)
     obj.script = script
-    return obj
   })
 
   project.functions.forEach((func) => {
@@ -58,7 +55,6 @@ export function minifyProject(project: Project) {
       parseScript(content)
       func.content = JSON.stringify(content)
     } catch { /* empty */ }
-    return func
   })
 
   return project
