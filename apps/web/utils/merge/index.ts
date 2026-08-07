@@ -1,5 +1,6 @@
 import { Project, type MergeOptions, mergeAllAsync } from '@entry-mergy/core'
 import { mergeAllKineticAsync } from '@entry-mergy/kinetic'
+import { minifyProject } from '@entry-mergy/entry-project-optimizer'
 import {
   getImageFileurlFrom,
   getSoundFileurlFrom,
@@ -182,7 +183,8 @@ async function* iterateAllAssets({
 export async function mergeProjectsToOffline(options: MergeUIOptionsStore) {
   const projects = getSelectedProjects(options)
   const merged = await mergeSelectedProjects(projects, options)
+  const optimized = minifyProject(merged)
 
   const assets = iterateAllAssets(options)
-  return exportProjectToOffline(merged, assets, true)
+  return exportProjectToOffline(optimized, assets, true)
 }
