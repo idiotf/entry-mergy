@@ -143,7 +143,7 @@ const ProjectItem = observer(
                   <SettingsIcon />
                 </AttachmentAction>
               </PopoverTrigger>
-              <PopoverContent className='max-h-[50vh]'>
+              <PopoverContent className='max-h-[50vh] overflow-auto'>
                 {options}
               </PopoverContent>
             </Popover>
