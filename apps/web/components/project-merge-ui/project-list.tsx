@@ -143,7 +143,9 @@ const ProjectItem = observer(
                   <SettingsIcon />
                 </AttachmentAction>
               </PopoverTrigger>
-              <PopoverContent>{options}</PopoverContent>
+              <PopoverContent className='max-h-[50vh] overflow-auto'>
+                {options}
+              </PopoverContent>
             </Popover>
           )}
           <AttachmentAction aria-label='이 작품 제거' onClick={removeProject}>
