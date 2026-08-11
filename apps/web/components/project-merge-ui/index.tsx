@@ -317,18 +317,21 @@ const ProjectItemOptionsUI = observer(
         {options.mergeMode == 'kinetic' && (
           <Field>
             <FieldLabel>타임스탬프</FieldLabel>
-            <NumberInput
-              value={startTimestamp}
-              min={0}
-              step='any'
-              onValueChange={setStartTimestamp}
-            />
-            <NumberInput
-              value={endTimestamp}
-              min={0}
-              step='any'
-              onValueChange={setEndTimestamp}
-            />
+            <div className='flex gap-1'>
+              <NumberInput
+                value={startTimestamp}
+                min={0}
+                step='any'
+                onValueChange={setStartTimestamp}
+              />
+              <span>~</span>
+              <NumberInput
+                value={endTimestamp}
+                min={0}
+                step='any'
+                onValueChange={setEndTimestamp}
+              />
+            </div>
           </Field>
         )}
         <Field>
