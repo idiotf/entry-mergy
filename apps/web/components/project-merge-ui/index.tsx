@@ -317,12 +317,13 @@ const ProjectItemOptionsUI = observer(
         {options.mergeMode == 'kinetic' && (
           <Field>
             <FieldLabel>타임스탬프</FieldLabel>
-            <div className='flex gap-1'>
+            <div className='flex gap-1 items-center'>
               <NumberInput
                 value={startTimestamp}
                 min={0}
                 step='any'
                 onValueChange={setStartTimestamp}
+                aria-label='시작 타임스팸프'
               />
               <span>~</span>
               <NumberInput
@@ -330,6 +331,7 @@ const ProjectItemOptionsUI = observer(
                 min={0}
                 step='any'
                 onValueChange={setEndTimestamp}
+                aria-label='끝 타임스탬프'
               />
             </div>
           </Field>
@@ -356,6 +358,7 @@ export const ProjectMergeUI = observer((props: ProjectMergeUIProps) => {
   const [error, setError] = useState('')
 
   const [optionError, setOptionError] = useState<OptionError>()
+  const [optionsOpen, setOptionsOpen] = useState(false)
 
   const handleChangeProjectList = useCallback((error?: string) => {
     setError(error || '')
@@ -393,7 +396,7 @@ export const ProjectMergeUI = observer((props: ProjectMergeUIProps) => {
         options={getOptionsComp}
         onChange={handleChangeProjectList}
       />
-      <Collapsible>
+      <Collapsible open={optionsOpen} onOpenChange={setOptionsOpen}>
         <div className='flex gap-2'>
           <CollapsibleTrigger asChild>
             <Button
