@@ -376,7 +376,13 @@ export const ProjectMergeUI = observer((props: ProjectMergeUIProps) => {
         `output_${options.mergeMode}.ent`
       )
     } catch (e) {
-      if (e instanceof OptionError) return setOptionError(e)
+      if (e instanceof OptionError) {
+        if (['mustSelectThumbnail', 'mustSelectBGM'].includes(e.type)) {
+          setOptionsOpen(true)
+        }
+        setOptionError(e)
+        return
+      }
       console.error(e)
       setError(String(e))
     } finally {
