@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import { useCallback } from 'react'
 import { ImageIcon } from 'lucide-react'
-import { FileSelectZone } from './그그그뭐더라'
+import { FileSelectZone } from './ui/file-button'
 
 export interface ImageFile {
   file: File
