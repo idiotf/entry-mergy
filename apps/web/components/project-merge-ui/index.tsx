@@ -33,6 +33,7 @@ import {
   SelectValue,
 } from '../ui/select'
 import { FileSelectZone } from '../ui/file-button'
+import { ImageSelectZone } from '../file-select'
 import { NumberInput } from '../ui/number-input'
 import { Switch } from '../ui/switch'
 import { ListInput } from '../ui/list-input'
