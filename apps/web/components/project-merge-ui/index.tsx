@@ -54,13 +54,15 @@ const ProjectOptionsUI = observer(
       [options]
     )
 
-    const setThumbnail = useCallback(
-      (files: FileList) => {
-        const file = files[0]
-        if (!file) return
-
-        return options.setThumbnail(file)
+    const thumbnailData = useMemo(
+      () => options.thumbnail && {
+        file: options.thumbnail.file,
+        url: options.thumbnail.blobUrl,
       },
+      []
+    )
+    const setThumbnail = useCallback(
+      (file: File) => options.setThumbnail(file),
       [options]
     )
 
@@ -122,27 +124,9 @@ const ProjectOptionsUI = observer(
           <>
             <Field data-invalid={error?.type == 'mustSelectThumbnail'}>
               <FieldLabel htmlFor='thumbnail'>썸네일</FieldLabel>
-              <FileSelectZone
-                id='thumbnail'
-                accept={['image/*']}
-                selected={!!options.thumbnail}
-                onFileSelect={setThumbnail}
-              >
-                {options.thumbnail ? (
-                  <Image
-                    src={options.thumbnail.blobUrl}
-                    alt=''
-                    width={960}
-                    height={540}
-                    unoptimized
-                  />
-                ) : (
-                  <>
-                    <ImageIcon />
-                    이미지를 드롭하거나 선택
-                  </>
-                )}
-              </FileSelectZone>
+              <ImageSelectZone
+                image={thumbnailData}
+                onImageChange={setThumbnail} />
               {error?.type == 'mustSelectThumbnail' && (
                 <FieldError>{error.message}</FieldError>
               )}
