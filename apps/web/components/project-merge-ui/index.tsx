@@ -63,7 +63,7 @@ const ProjectOptionsUI = observer(
       []
     )
     const setThumbnail = useCallback(
-      (file: File) => options.setThumbnail(file),
+      (file: File | undefined) => options.setThumbnail(file),
       [options]
     )
 
