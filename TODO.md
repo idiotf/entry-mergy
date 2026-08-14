@@ -2,6 +2,7 @@
 
 ## web
 
+- 타임스탬프 오류 시 작품 목록에서 옵션 UI 보여지도록 수정
 - 썸네일, BGM, 작품 간 공유할 변수·리스트 UI 수정
 - BGM 시작/끝 시간 정해서 crop하는 기능 추가
 - [optional] 작품 이동 시 `endTimestamp` 대신 `startTimestamp`가 이동되도록 수정
