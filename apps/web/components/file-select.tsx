@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import { useCallback } from 'react'
-import { ImageIcon } from 'lucide-react'
+import { ImageIcon, Music4Icon } from 'lucide-react'
 import {
   FileSelectZone,
   type FileSelectZoneProps,
@@ -8,7 +8,7 @@ import {
 
 type BaseSelectZoneProps = Omit<
   FileSelectZoneProps,
-  'accept' | 'selected' | 'onFileSelect' | 'children',
+  'accept' | 'selected' | 'onFileSelect' | 'children'
 >
 
 export interface ImageFile {
@@ -79,8 +79,8 @@ export function BGMSelectZone({
     <FileSelectZone
       {...props}
       accept={['audio/*']}
-      selected={!!options.bgm}
-      onFileSelect={setBGM}
+      selected={!!sound}
+      onFileSelect={onSoundChange}
     >
       <Music4Icon />
       BGM을 드롭하거나 선택
