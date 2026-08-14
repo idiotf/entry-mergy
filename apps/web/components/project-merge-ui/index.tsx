@@ -32,8 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select'
-import { FileSelectZone } from '../ui/file-button'
-import { ImageSelectZone } from '../file-select'
+import { ImageSelectZone, BGMSelectZone } from '../file-select'
 import { NumberInput } from '../ui/number-input'
 import { Switch } from '../ui/switch'
 import { ListInput } from '../ui/list-input'
@@ -67,13 +66,14 @@ const ProjectOptionsUI = observer(
       [options]
     )
 
-    const setBGM = useCallback(
-      (files: FileList) => {
-        const file = files[0]
-        if (!file) return
-
-        return options.setBGM(file)
+    const bgmData = useMemo(
+      () => options.bgm && {
+        file: options.bgm.file,
       },
+      [options.bgm]
+    )
+    const setBGM = useCallback(
+      (file: File | undefined) => options.setBGM(file),
       [options]
     )
 
@@ -126,23 +126,21 @@ const ProjectOptionsUI = observer(
             <Field data-invalid={error?.type == 'mustSelectThumbnail'}>
               <FieldLabel htmlFor='thumbnail'>썸네일</FieldLabel>
               <ImageSelectZone
+                id='thumbnail'
                 image={thumbnailData}
-                onImageChange={setThumbnail} />
+                onImageChange={setThumbnail}
+              />
               {error?.type == 'mustSelectThumbnail' && (
                 <FieldError>{error.message}</FieldError>
               )}
             </Field>
             <Field data-invalid={error?.type == 'mustSelectBGM'}>
               <FieldLabel htmlFor='bgm'>BGM</FieldLabel>
-              <FileSelectZone
+              <BGMSelectZone
                 id='bgm'
-                accept={['audio/*']}
-                selected={!!options.bgm}
-                onFileSelect={setBGM}
-              >
-                <Music4Icon />
-                BGM을 드롭하거나 선택
-              </FileSelectZone>
+                sound={bgmData}
+                onSoundChange={setBGM}
+              />
               {error?.type == 'mustSelectBGM' && (
                 <FieldError>{error.message}</FieldError>
               )}
