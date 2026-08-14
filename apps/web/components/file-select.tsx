@@ -75,12 +75,21 @@ export function BGMSelectZone({
   onSoundChange,
   ...props
 }: BGMSelectZoneProps) {
+  const onFileSelect = useCallback(
+    (list: FileList) => {
+      const file = list[0]
+      if (!file) return
+      onSoundChange(file)
+    },
+    [onSoundChange]
+  )
+
   return (
     <FileSelectZone
       {...props}
       accept={['audio/*']}
       selected={!!sound}
-      onFileSelect={onSoundChange}
+      onFileSelect={onFileSelect}
     >
       <Music4Icon />
       BGM을 드롭하거나 선택
