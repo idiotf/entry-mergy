@@ -144,7 +144,8 @@ function convertPromiseBlobToStream(blob: Promise<Blob>) {
   return new ReadableStream<Uint8Array<ArrayBuffer>>({
     async pull(controller) {
       const data = await (await reader).read()
-      return data.done ? controller.close() : controller.enqueue(data.value)
+      if (data.done) controller.close()
+      else controller.enqueue(data.value)
     },
     async cancel(reason) {
       return (await stream).cancel(reason)

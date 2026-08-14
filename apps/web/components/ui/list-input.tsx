@@ -8,10 +8,11 @@ import type { ListStore } from '@/stores/list-store'
 interface ListInputItemProps {
   i: number
   value: string
+  disabled?: boolean | undefined
   store: ListStore<string>
 }
 
-function ListInputItem({ i, value, store }: ListInputItemProps) {
+function ListInputItem({ i, value, disabled, store }: ListInputItemProps) {
   const setItem = useCallback(
     ({ target: { value } }: React.ChangeEvent<HTMLInputElement>) =>
       store.set(i, value),
@@ -22,8 +23,8 @@ function ListInputItem({ i, value, store }: ListInputItemProps) {
 
   return (
     <li className='flex gap-2'>
-      <Input value={value} onChange={setItem} />
-      <Button size='icon' variant='ghost' onClick={removeItem}>
+      <Input value={value} disabled={disabled} onChange={setItem} />
+      <Button disabled={disabled} size='icon' variant='ghost' onClick={removeItem}>
         <XIcon />
       </Button>
     </li>
@@ -31,20 +32,27 @@ function ListInputItem({ i, value, store }: ListInputItemProps) {
 }
 
 export interface ListInputProps {
+  disabled?: boolean | undefined
   store: ListStore<string>
 }
 
-export const ListInput = observer(({ store }: ListInputProps) => {
+export const ListInput = observer(({ disabled, store }: ListInputProps) => {
   const addItem = useCallback(() => store.add(''), [store])
 
   return (
     <div className='flex gap-2'>
-      <Button size='icon' onClick={addItem}>
+      <Button disabled={disabled} size='icon' onClick={addItem}>
         <PlusIcon />
       </Button>
       <ul>
         {store.items.map(({ key, value }, i) => (
-          <ListInputItem key={key} i={i} value={value} store={store} />
+          <ListInputItem
+            key={key}
+            i={i}
+            value={value}
+            disabled={disabled}
+            store={store}
+          />
         ))}
       </ul>
     </div>

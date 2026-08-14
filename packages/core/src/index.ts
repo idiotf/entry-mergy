@@ -137,10 +137,10 @@ function getBlockDeps(block: unknown) {
     deps.push(block.id)
 
   if ('params' in block && Array.isArray(block.params))
-    deps.push(...block.params.flatMap(getThreadDeps))
+    deps.push(...getThreadDeps(block.params))
 
   if ('statements' in block && Array.isArray(block.statements))
-    deps.push(...block.statements.flatMap(getScriptDeps))
+    deps.push(...getScriptDeps(block.statements))
 
   return deps
 }

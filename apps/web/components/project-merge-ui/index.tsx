@@ -43,10 +43,11 @@ import type { MergeMode, MergeUIOptionsStore } from '@/stores/merge-options'
 interface ProjectOptionsUIProps {
   options: MergeUIOptionsStore
   error?: OptionError | undefined
+  disabled?: boolean | undefined
 }
 
 const ProjectOptionsUI = observer(
-  ({ options, error }: ProjectOptionsUIProps) => {
+  ({ options, error, disabled }: ProjectOptionsUIProps) => {
     const setMergeMode = useCallback(
       (mode: MergeMode) => {
         options.setMergeMode(mode)
@@ -104,9 +105,13 @@ const ProjectOptionsUI = observer(
 
     return (
       <FieldGroup className='mt-2'>
-        <Field>
+        <Field data-disabled={disabled}>
           <FieldLabel htmlFor='mergeMode'>병합 모드</FieldLabel>
-          <Select value={options.mergeMode} onValueChange={setMergeMode}>
+          <Select
+            value={options.mergeMode}
+            disabled={!!disabled}
+            onValueChange={setMergeMode}
+          >
             <SelectTrigger id='mergeMode' className='w-45'>
               <SelectValue />
             </SelectTrigger>
@@ -120,12 +125,16 @@ const ProjectOptionsUI = observer(
         </Field>
         {options.mergeMode == 'kinetic' && (
           <>
-            <Field data-invalid={error?.type == 'mustSelectThumbnail'}>
+            <Field
+              data-disabled={disabled}
+              data-invalid={error?.type == 'mustSelectThumbnail'}
+            >
               <FieldLabel htmlFor='thumbnail'>썸네일</FieldLabel>
               <FileSelectZone
                 id='thumbnail'
                 accept={['image/*']}
                 selected={!!options.thumbnail}
+                disabled={disabled}
                 onFileSelect={setThumbnail}
               >
                 {options.thumbnail ? (
@@ -147,12 +156,16 @@ const ProjectOptionsUI = observer(
                 <FieldError>{error.message}</FieldError>
               )}
             </Field>
-            <Field data-invalid={error?.type == 'mustSelectBGM'}>
+            <Field
+              data-disabled={disabled}
+              data-invalid={error?.type == 'mustSelectBGM'}
+            >
               <FieldLabel htmlFor='bgm'>BGM</FieldLabel>
               <FileSelectZone
                 id='bgm'
                 accept={['audio/*']}
                 selected={!!options.bgm}
+                disabled={disabled}
                 onFileSelect={setBGM}
               >
                 <Music4Icon />
@@ -162,25 +175,26 @@ const ProjectOptionsUI = observer(
                 <FieldError>{error.message}</FieldError>
               )}
             </Field>
-            <Field>
+            <Field data-disabled={disabled}>
               <FieldLabel htmlFor='waitForBGM'>BGM 로딩 기다리기</FieldLabel>
               <Switch
                 id='waitForBGM'
                 checked={options.waitForBGM}
+                disabled={disabled}
                 onCheckedChange={setWaitForBGM}
                 className='float-left'
               />
             </Field>
-            <Field data-disabled={!options.waitForBGM}>
+            <Field data-disabled={disabled || !options.waitForBGM}>
               <FieldLabel htmlFor='useBGMCache'>BGM 로딩 캐시 사용</FieldLabel>
               <Switch
                 id='useBGMCache'
                 checked={options.useBGMCache}
-                disabled={!options.waitForBGM}
+                disabled={disabled || !options.waitForBGM}
                 onCheckedChange={setUseBGMCache}
               />
             </Field>
-            <Field>
+            <Field data-disabled={disabled}>
               <FieldLabel htmlFor='timestampGap'>
                 타임스탬프 사이 간격
               </FieldLabel>
@@ -189,20 +203,25 @@ const ProjectOptionsUI = observer(
                 value={options.timestampGap}
                 min={0}
                 step='any'
+                disabled={disabled}
                 onValueChange={setTimestampGap}
               />
             </Field>
           </>
         )}
-        <Field>
+        <Field data-disabled={disabled}>
           <FieldLabel>작품 간 공유할 변수·리스트</FieldLabel>
-          <ListInput store={options.coreOptions.preserveVar} />
+          <ListInput
+            disabled={disabled}
+            store={options.coreOptions.preserveVar}
+          />
         </Field>
-        <Field>
+        <Field data-disabled={disabled}>
           <FieldLabel htmlFor='shareFunctions'>작품 간 함수 공유</FieldLabel>
           <Switch
             id='shareFunctions'
             checked={options.coreOptions.shareFunctions}
+            disabled={disabled}
             onCheckedChange={setShareFunctions}
           />
         </Field>
@@ -388,6 +407,7 @@ export const ProjectMergeUI = observer((props: ProjectMergeUIProps) => {
       <ProjectList
         projects={options}
         options={getOptionsComp}
+        disabled={merging}
         onChange={handleChangeProjectList}
       />
       <Collapsible>
@@ -411,7 +431,11 @@ export const ProjectMergeUI = observer((props: ProjectMergeUIProps) => {
           </div>
         </div>
         <CollapsibleContent>
-          <ProjectOptionsUI options={options} error={optionError} />
+          <ProjectOptionsUI
+            options={options}
+            error={optionError}
+            disabled={merging}
+          />
         </CollapsibleContent>
       </Collapsible>
     </div>

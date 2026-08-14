@@ -47,7 +47,6 @@ describe('Importing offline project', () => {
 
   it('Extracting assets', async () => {
     const { assets } = await expectToBeImported('assets')
-    assert(assets !== undefined)
 
     const awaitedAssets = await Array.fromAsync(assets)
     const assetsMap = new Map(awaitedAssets.map((v) => [v.name, v.data]))

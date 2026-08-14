@@ -19,6 +19,7 @@ function parseBlock(block: unknown) {
   if (!isDictionary(block)) return
 
   block.id = undefined
+  block._backupParams = undefined
   if (block.assemble === true) block.assemble = undefined
   if (block.copyable === true) block.copyable = undefined
   if (block.deletable === 1) block.deletable = undefined
@@ -42,11 +43,18 @@ function parseBlock(block: unknown) {
   }
 }
 
-export function minifyProject(project: Project) {
+export interface MinifyProjectOptions {
+  convertScriptToObject?: boolean
+}
+
+export function minifyProject(
+  project: Project,
+  options: MinifyProjectOptions = {}
+) {
   project.objects.forEach((obj) => {
     const script = getScriptOf(obj)
     parseScript(script)
-    obj.script = script
+    obj.script = options.convertScriptToObject ? script : JSON.stringify(script)
   })
 
   project.functions.forEach((func) => {
@@ -54,7 +62,9 @@ export function minifyProject(project: Project) {
       const content = JSON.parse(func.content)
       parseScript(content)
       func.content = JSON.stringify(content)
-    } catch { /* empty */ }
+    } catch {
+      /* empty */
+    }
   })
 
   return project

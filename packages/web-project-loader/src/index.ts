@@ -1,10 +1,10 @@
+import { LoaderProject } from '@entry-mergy/project-loader-base'
 import {
   selectProjectMany,
   type EntryGraphQLClient,
   type ProjectId,
 } from '@entry-mergy/entry-api-client'
 import type { Project } from '@entry-mergy/entry-utils/types'
-import type { ImportedProject } from '@entry-mergy/project-loader-types'
 import type { CommonProjectLink } from './utils'
 
 function loadAsset(path: string) {
@@ -54,104 +54,73 @@ const getSoundPath = (sound: object) =>
       ? `${(sound.filename + '').substring(0, 2)}/${(sound.filename + '').substring(2, 4)}/${sound.filename}${'ext' in sound ? sound.ext : '.mp3'}`
       : null
 
-export async function* getAssetsFromProject(
-  project: Project,
-  signal: AbortSignal
-) {
+export function* getAssetsFromProject(project: Project) {
   const { objects } = project
   const pictures = objects.flatMap((obj) => obj.sprite.pictures)
   const sounds = objects.flatMap((obj) => obj.sprite.sounds)
 
   for (const picture of pictures) {
-    if (signal.aborted) throw signal.reason
     const innerPath = getPicturePath(picture)
     if (innerPath !== null) yield getAssetFromPath(innerPath)
   }
   for (const sound of sounds) {
-    if (signal.aborted) throw signal.reason
     const innerPath = getSoundPath(sound)
     if (innerPath !== null) yield getAssetFromPath(innerPath)
   }
 }
 
-async function* getAssetsFromAsyncProject(
-  project: Promise<Project>,
-  signal: AbortSignal
-) {
-  return yield* getAssetsFromProject(await withSignal(project, signal), signal)
-}
-
-function withSignal<T>(promise: Promise<T>, signal: AbortSignal) {
-  return new Promise<T>((resolve, reject) => {
-    if (signal.aborted) return reject(signal.reason)
-
-    const onAbort = () => reject(signal.reason)
-    signal.addEventListener('abort', onAbort, { once: true })
-    promise
-      .finally(() => signal.removeEventListener('abort', onAbort))
-      .then(resolve, reject)
-  })
-}
-
-export function importProjectFromWeb(
-  client: EntryGraphQLClient,
-  id: readonly ProjectId[]
-): ImportedProject[] {
-  const controller = new AbortController()
-  const projects = selectProjectMany(client, id, { signal: controller.signal })
-
-  const projectsComplete = id.map(() => false)
-  function abortIfAllComplete() {
-    if (projectsComplete.every((v) => v)) controller.abort()
+class WebProject extends LoaderProject {
+  private constructor(private onFinish: () => void) {
+    super()
   }
 
-  return id.map((id, i) => {
-    const projectController = new AbortController()
-    const assetsController = new AbortController()
+  static fromId(client: EntryGraphQLClient, id: readonly ProjectId[]) {
+    const controller = new AbortController()
+    const projects = selectProjectMany(client, id, { signal: controller.signal })
 
-    const project = projects
-      .then((projects) => {
+    const projectsComplete = id.map(() => false)
+    function abortIfAllComplete() {
+      if (projectsComplete.every((v) => v)) controller.abort()
+    }
+
+    return id.map((id, i) => {
+      const project = new this(() => {
+        projectsComplete[i] = true
+        abortIfAllComplete()
+      })
+
+      const projectData = projects.then((projects) => {
         const project = projects[i]
         if (!project)
           throw TypeError(`Failed to load project ${id} (at ${i + 1})`)
         return project
       })
-      .finally(abortProject)
+      project.resolveProject(projectData)
 
-    const assets = {
-      [Symbol.asyncIterator]() {
-        return getAssetsFromAsyncProject(project, assetsController.signal)
-      },
-    }
+      projectData.then(
+        (projectData) => {
+          for (const asset of getAssetsFromProject(projectData)) {
+            project.queueAsset(asset)
+          }
+          project.finishAssets()
+        },
+        (reason) => project.throwAssets(reason)
+      )
+    })
+  }
 
-    function abortProject() {
-      projectController.abort()
-      setIfComplete()
-    }
+  protected override handleCancelProject() {}
+  protected override handleCancelAssets() {}
+  protected override handleTerminate() {
+    this.onFinish()
+  }
+}
 
-    function abortAssets() {
-      assetsController.abort()
-      setIfComplete()
-    }
-
-    function setIfComplete() {
-      if (projectController.signal.aborted && assetsController.signal.aborted) {
-        projectsComplete[i] = true
-        abortIfAllComplete()
-      }
-    }
-
-    return {
-      project: withSignal(project, projectController.signal),
-      assets,
-      cancelProject() {
-        abortProject()
-      },
-      cancelAssets() {
-        abortAssets()
-      },
-    }
-  })
+export function importProjectFromWeb(
+  client: EntryGraphQLClient,
+  id: readonly ProjectId[]
+) {
+  return WebProject.fromId(client, id)
 }
 
 const strictProjectRegex = /^https:\/\/playentry\.org\/project\/([\da-f]{24})$/

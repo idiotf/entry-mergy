@@ -1,5 +1,6 @@
 {
   "name": "@entry-mergy/web-project-loader",
+  "description": "Web project loader library used in Entry Mergy monorepo",
   "version": "0.0.1",
   "type": "module",
   "files": [
@@ -45,6 +46,7 @@
   "dependencies": {
     "@entry-mergy/entry-api-client": "workspace:*",
     "@entry-mergy/entry-utils": "workspace:*",
+    "@entry-mergy/project-loader-base": "workspace:*",
     "@entry-mergy/project-loader-types": "workspace:*",
     "zod": "^4.4.3"
   }

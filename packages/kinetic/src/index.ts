@@ -260,8 +260,7 @@ function removeBlocksInThread(thread: unknown, blocksToRemove: string[]) {
     )
       thread.splice(i--, 1)
 
-    if ('params' in block)
-      removeBlocksInThread(block.params, blocksToRemove)
+    if ('params' in block) removeBlocksInThread(block.params, blocksToRemove)
 
     if ('statements' in block)
       removeBlocksRecursive(block.statements, blocksToRemove)
@@ -287,7 +286,9 @@ function removeUnusedData(project: ProjectJSON, blocksToRemove: string[]) {
       const content = JSON.parse(func.content)
       removeBlocksRecursive(content, blocksToRemove)
       func.content = JSON.stringify(content)
-    } catch { /* empty */ }
+    } catch {
+      /* empty */
+    }
   }
 }
 

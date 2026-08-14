@@ -4,7 +4,9 @@ export function getScriptOf(obj: EntryObject): unknown {
   if (typeof obj.script == 'string') {
     try {
       return JSON.parse(obj.script)
-    } catch { /* empty */ }
+    } catch {
+      /* empty */
+    }
   }
   return obj.script
 }

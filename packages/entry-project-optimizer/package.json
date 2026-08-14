@@ -1,5 +1,6 @@
 {
   "name": "@entry-mergy/entry-project-optimizer",
+  "description": "Entry project minifier/compressor library used in Entry Mergy monorepo",
   "version": "0.0.1",
   "type": "module",
   "files": [

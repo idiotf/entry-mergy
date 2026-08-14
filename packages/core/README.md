@@ -1,3 +1,3 @@
 # @entry-mergy/core
 
-The core library used in Entry Mergy monorepo
+The core merging library used in Entry Mergy monorepo

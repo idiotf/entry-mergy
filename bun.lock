@@ -13,6 +13,7 @@
       "dependencies": {
         "@dnd-kit/helpers": "^0.5.0",
         "@dnd-kit/react": "^0.5.0",
+        "@entry-mergy/async-iterable-controller": "workspace:*",
         "@entry-mergy/core": "workspace:*",
         "@entry-mergy/entry-api-client": "workspace:*",
         "@entry-mergy/entry-project-optimizer": "workspace:*",
@@ -49,6 +50,28 @@
         "tailwindcss": "^4.3.3",
         "tw-animate-css": "^1.4.0",
         "typescript": "^5.9.3",
+      },
+    },
+    "packages/async-iterable-controller": {
+      "name": "@entry-mergy/async-iterable-controller",
+      "version": "0.0.1",
+      "dependencies": {
+        "fast-fifo": "^1.3.2",
+      },
+      "devDependencies": {
+        "@eslint/js": "^10.0.1",
+        "@types/fast-fifo": "^1.3.0",
+        "@types/node": "^26.1.1",
+        "eslint": "^10.5.0",
+        "globals": "^17.6.0",
+        "jiti": "^2.7.0",
+        "prettier": "^3.8.3",
+        "publint": "^0.3.21",
+        "tsdown": "^0.22.5",
+        "typescript-eslint": "^8.59.2",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
       },
     },
     "packages/common-utils": {
@@ -202,6 +225,7 @@
       "dependencies": {
         "@entry-mergy/common-utils": "workspace:*",
         "@entry-mergy/entry-utils": "workspace:*",
+        "@entry-mergy/project-loader-base": "workspace:*",
         "@entry-mergy/project-loader-types": "workspace:*",
         "@entry-mergy/stream-utils": "workspace:*",
         "tar-js": "^0.3.0",
@@ -212,6 +236,29 @@
         "@types/node": "^26.1.1",
         "@types/tar-js": "^0.3.5",
         "@types/tar-stream": "^3.1.4",
+        "eslint": "^10.5.0",
+        "globals": "^17.6.0",
+        "jiti": "^2.7.0",
+        "prettier": "^3.8.3",
+        "publint": "^0.3.21",
+        "tsdown": "^0.22.5",
+        "typescript-eslint": "^8.59.2",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/project-loader-base": {
+      "name": "@entry-mergy/project-loader-base",
+      "version": "0.0.1",
+      "dependencies": {
+        "@entry-mergy/async-iterable-controller": "workspace:*",
+        "@entry-mergy/project-loader-types": "workspace:*",
+      },
+      "devDependencies": {
+        "@eslint/js": "^10.0.1",
+        "@types/fast-fifo": "^1.3.0",
+        "@types/node": "^26.1.1",
         "eslint": "^10.5.0",
         "globals": "^17.6.0",
         "jiti": "^2.7.0",
@@ -269,6 +316,7 @@
       "dependencies": {
         "@entry-mergy/entry-api-client": "workspace:*",
         "@entry-mergy/entry-utils": "workspace:*",
+        "@entry-mergy/project-loader-base": "workspace:*",
         "@entry-mergy/project-loader-types": "workspace:*",
         "zod": "^4.4.3",
       },
@@ -375,6 +423,8 @@
 
     "@emnapi/wasi-threads": ["@emnapi/wasi-threads@1.2.2", "", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-c95qOXkHdydNKhscBTebqEC1CVAZpyqOfVfBzQ1qgzyl3gfeldUjIggDbIZgDKsHLgnsM+igH7TJ/eAasaVuMA=="],
 
+    "@entry-mergy/async-iterable-controller": ["@entry-mergy/async-iterable-controller@workspace:packages/async-iterable-controller"],
+
     "@entry-mergy/common-utils": ["@entry-mergy/common-utils@workspace:packages/common-utils"],
 
     "@entry-mergy/core": ["@entry-mergy/core@workspace:packages/core"],
@@ -390,6 +440,8 @@
     "@entry-mergy/media-metadata": ["@entry-mergy/media-metadata@workspace:packages/media-metadata"],
 
     "@entry-mergy/offline-project-loader": ["@entry-mergy/offline-project-loader@workspace:packages/offline-project-loader"],
+
+    "@entry-mergy/project-loader-base": ["@entry-mergy/project-loader-base@workspace:packages/project-loader-base"],
 
     "@entry-mergy/project-loader-types": ["@entry-mergy/project-loader-types@workspace:packages/project-loader-types"],
 
@@ -738,6 +790,8 @@
     "@types/esrecurse": ["@types/esrecurse@4.3.1", "", {}, "sha512-xJBAbDifo5hpffDBuHl0Y8ywswbiAp/Wi7Y/GtAgSlZyIABppyurxVueOPE8LUQOxdlgi6Zqce7uoEpqNTeiUw=="],
 
     "@types/estree": ["@types/estree@1.0.9", "", {}, "sha512-GhdPgy1el4/ImP05X05Uw4cw2/M93BCUmnEvWZNStlCzEKME4Fkk+YpoA5OiHNQmoS7Cafb8Xa3Pya8m1Qrzeg=="],
+
+    "@types/fast-fifo": ["@types/fast-fifo@1.3.0", "", {}, "sha512-xTVvla2QX5ruNmVUqCFc++xm42xl6RBaroppSleSczvM2rAwClr88MbnrgDGLIStt4RCVegeKO4z2HM5AHFOng=="],
 
     "@types/json-schema": ["@types/json-schema@7.0.15", "", {}, "sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA=="],
 

@@ -1,5 +1,6 @@
 {
   "name": "@entry-mergy/common-utils",
+  "description": "Common utils library used in Entry Mergy monorepo",
   "version": "0.0.1",
   "type": "module",
   "files": [

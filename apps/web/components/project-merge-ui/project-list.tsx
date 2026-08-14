@@ -37,6 +37,7 @@ import { DragDropProvider, type DragEndEvent } from '@dnd-kit/react'
 import { move } from '@dnd-kit/helpers'
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
 import { FastSuspense } from '../fast-suspense'
+import { cn } from '@/lib/utils'
 
 function ErrorComp() {
   return <ErrorMessage>오류 발생</ErrorMessage>
@@ -59,11 +60,12 @@ interface ProjectItemProps {
   projects: ProjectListStore
   i: number
   options?: React.ReactNode
+  disabled?: boolean | undefined
   onRemove?: (() => void) | undefined
 }
 
 const ProjectItem = observer(
-  ({ id, projects, i, options, onRemove }: ProjectItemProps) => {
+  ({ id, projects, i, options, disabled, onRemove }: ProjectItemProps) => {
     const project = projects.projects[i]!
     const hasError = !!project.error
     const thumbUrl = project.source.metadata.thumbUrl
@@ -84,7 +86,12 @@ const ProjectItem = observer(
       onRemove?.()
     }, [projects, i, onRemove])
 
-    const { ref, handleRef } = useSortable({ id, index: i })
+    const { ref, handleRef } = useSortable({
+      id,
+      index: i,
+      disabled: !!disabled,
+    })
+
     const AttachmentIcon = project.source.type == 'file' ? FileIcon : EntryIcon
 
     const projectNameComp = useMemo(
@@ -101,7 +108,7 @@ const ProjectItem = observer(
         <AttachmentMedia
           ref={handleRef}
           variant={thumbUrl && !thumbError ? 'image' : 'icon'}
-          className='cursor-grab touch-none'
+          className={cn('touch-none', disabled || 'cursor-grab')}
         >
           {thumbUrl && !thumbError ? (
             <Image
@@ -131,6 +138,7 @@ const ProjectItem = observer(
           {hasError && (
             <AttachmentAction
               aria-label='작품 다시 불러오기'
+              disabled={disabled}
               onClick={reloadProject}
             >
               <RefreshCw />
@@ -139,7 +147,10 @@ const ProjectItem = observer(
           {options && (
             <Popover>
               <PopoverTrigger asChild>
-                <AttachmentAction aria-label='옵션 열기'>
+                <AttachmentAction
+                  aria-label='옵션 열기'
+                  disabled={disabled}
+                >
                   <SettingsIcon />
                 </AttachmentAction>
               </PopoverTrigger>
@@ -148,7 +159,11 @@ const ProjectItem = observer(
               </PopoverContent>
             </Popover>
           )}
-          <AttachmentAction aria-label='이 작품 제거' onClick={removeProject}>
+          <AttachmentAction
+            aria-label='이 작품 제거'
+            disabled={disabled}
+            onClick={removeProject}
+          >
             <XIcon />
           </AttachmentAction>
         </AttachmentActions>
@@ -160,11 +175,12 @@ const ProjectItem = observer(
 export interface ProjectListProps {
   projects: ProjectListStore
   options?: (i: number) => React.ReactNode
+  disabled?: boolean | undefined
   onChange?: (error?: string) => void
 }
 
 export const ProjectList = observer(
-  ({ projects, options, onChange }: ProjectListProps) => {
+  ({ projects, options, disabled, onChange }: ProjectListProps) => {
     const addProjectByLink = useCallback(
       (links: ProjectLinkIncludeShorten[]) => {
         if (!links.length) return onChange?.('올바른 작품 URL을 입력해주세요.')
@@ -254,6 +270,7 @@ export const ProjectList = observer(
             type='button'
             multiple
             accept={['.ent']}
+            disabled={disabled}
             onFileSelect={handleFiles}
             className='max-[550px]:w-full'
           />
@@ -265,7 +282,7 @@ export const ProjectList = observer(
               placeholder='playentry.org/project/*** or naver.me/***'
               autoComplete='off'
             />
-            <Button size='icon'>
+            <Button size='icon' disabled={disabled}>
               <PlusIcon />
             </Button>
           </div>
@@ -278,6 +295,7 @@ export const ProjectList = observer(
               projects={projects}
               i={i}
               options={options?.(i)}
+              disabled={disabled}
               onRemove={onChange}
             />
           ))}

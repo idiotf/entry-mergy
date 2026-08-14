@@ -1,5 +1,6 @@
 {
   "name": "@entry-mergy/stream-utils",
+  "description": "Stream utils library used in Entry Mergy monorepo",
   "version": "0.0.1",
   "type": "module",
   "files": [

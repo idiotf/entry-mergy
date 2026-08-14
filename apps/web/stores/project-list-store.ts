@@ -1,6 +1,7 @@
 import { makeAutoObservable, runInAction } from 'mobx'
 import { importProjectFromOffline } from '@entry-mergy/offline-project-loader'
 import { ListStore } from './list-store'
+import { AsyncIterableController } from '@entry-mergy/async-iterable-controller'
 import type { Project } from '@entry-mergy/core'
 import type { Asset, ImportedProject } from '@entry-mergy/project-loader-types'
 import type { ProjectLinkIncludeShorten } from '@entry-mergy/web-project-loader/utils'
@@ -13,56 +14,45 @@ interface BlobAsset {
   data: Promise<Blob>
 }
 
-async function* convertAssetsToBlob(
+function convertAssetsToBlob(
   assets: AsyncIterable<Asset>
 ): AsyncIterable<BlobAsset> {
-  function convertToBlob(result: IteratorResult<Asset>) {
-    return result.done
-      ? result
-      : {
-          ...result,
-          value: {
-            ...result.value,
-            data: new Response(result.value.data).blob(),
-          },
+  const controller = new AsyncIterableController<BlobAsset>()
+  const assetsIterator = assets[Symbol.asyncIterator]()
+
+  function iterate() {
+    assetsIterator.next().then(
+      (result) => {
+        if (result.done) {
+          controller.returnWithCache(result.value)
+        } else {
+          const asset = result.value
+          const blob = new Response(asset.data).blob()
+          const blobAsset = {
+            name: asset.name,
+            data: blob,
+          }
+          controller.enqueue(blobAsset).then(iterate)
         }
+      },
+      (reason) => controller.throw(reason)
+    )
   }
 
-  return {
-    [Symbol.asyncIterator](): AsyncIterator<BlobAsset> {
-      const assetsIterator = assets[Symbol.asyncIterator]()
-
-      return {
-        async next(value) {
-          return convertToBlob(await assetsIterator.next(value))
-        },
-        async return(value) {
-          return convertToBlob(
-            (await assetsIterator.return?.(value)) || { done: true, value }
-          )
-        },
-        async throw(e) {
-          if (!assetsIterator.throw) throw e
-          return convertToBlob(await assetsIterator.throw(e))
-        },
-      }
-    },
-  }
+  controller.backpressure().then(iterate)
+  return controller
 }
 
 export interface ProjectStateInit extends Omit<ImportedProject, 'assets'> {
-  source: ProjectSource
   assets?: AsyncIterable<Asset> | undefined
 }
 
 export class ProjectState {
-  source: ProjectSource
   project: Promise<Project>
   assets?: AsyncIterable<BlobAsset> | undefined
   error?: unknown
 
-  constructor(private init: ProjectStateInit) {
-    this.source = init.source
+  constructor(public source: ProjectSource, private init: ProjectStateInit) {
     this.project = init.project
     this.assets = init.assets && convertAssetsToBlob(init.assets)
 
@@ -319,7 +309,7 @@ function loadProjectsByLink<const T extends ProjectLinkIncludeShorten[]>(
       type == 'shorten' ? resolvedId : undefined
     )
 
-    return new ProjectState({ source, ...loaded })
+    return new ProjectState(source, loaded)
   })
 
   return loadedProjectStates
@@ -337,7 +327,7 @@ function loadProjectsByFile<const T extends File[]>(files: T) {
     })
     source.setFromLoadingProject(project)
 
-    return new ProjectState({ source, ...loaded })
+    return new ProjectState(source, loaded)
   })
 
   return loadedProjectStates
