@@ -59,6 +59,7 @@ class TimestampsStore {
   private map = new Map<ProjectState, number | undefined>()
   private isGuessedProject = new WeakSet<ProjectState>()
   private isGuessedEndTimestamp = new WeakSet<ProjectState>()
+  private removedProjects = new WeakSet<ProjectState>()
   firstTimestamp?: TimestampOptionValue
 
   constructor(private projectListStore: ProjectListStore) {
@@ -79,6 +80,8 @@ class TimestampsStore {
       this.isGuessedProject.add(state)
 
       state.project.then((project) => {
+        if (this.removedProjects.has(state)) return
+
         const i = this.projects.indexOf(state)
         if (i < 0) return
 
@@ -116,6 +119,12 @@ class TimestampsStore {
     const state = this.projects[i]!
     this.map.set(state, timestamp)
     this.isGuessedEndTimestamp.delete(state)
+  }
+
+  removeTimestamp(i: number) {
+    const state = this.projects[i]!
+    this.map.delete(state)
+    this.removedProjects.add(state)
   }
 }
 
@@ -224,6 +233,7 @@ export class MergeUIOptionsStore implements ProjectListStore {
   }
 
   removeProject(i: number) {
+    this.timestampsMap.removeTimestamp(i)
     this.projectListStore.removeProject(i)
   }
 

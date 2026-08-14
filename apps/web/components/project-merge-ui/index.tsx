@@ -32,7 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select'
-import { FileSelectZone } from '../ui/file-button'
+import { ImageSelectZone, BGMSelectZone } from '../file-select'
 import { NumberInput } from '../ui/number-input'
 import { Switch } from '../ui/switch'
 import { ListInput } from '../ui/list-input'
@@ -55,23 +55,26 @@ const ProjectOptionsUI = observer(
       [options]
     )
 
-    const setThumbnail = useCallback(
-      (files: FileList) => {
-        const file = files[0]
-        if (!file) return
-
-        return options.setThumbnail(file)
+    const thumbnailData = useMemo(
+      () => options.thumbnail && {
+        file: options.thumbnail.file,
+        url: options.thumbnail.blobUrl,
       },
+      [options.thumbnail]
+    )
+    const setThumbnail = useCallback(
+      (file: File | undefined) => options.setThumbnail(file),
       [options]
     )
 
-    const setBGM = useCallback(
-      (files: FileList) => {
-        const file = files[0]
-        if (!file) return
-
-        return options.setBGM(file)
+    const bgmData = useMemo(
+      () => options.bgm && {
+        file: options.bgm.file,
       },
+      [options.bgm]
+    )
+    const setBGM = useCallback(
+      (file: File | undefined) => options.setBGM(file),
       [options]
     )
 
@@ -130,28 +133,12 @@ const ProjectOptionsUI = observer(
               data-invalid={error?.type == 'mustSelectThumbnail'}
             >
               <FieldLabel htmlFor='thumbnail'>썸네일</FieldLabel>
-              <FileSelectZone
+              <ImageSelectZone
                 id='thumbnail'
-                accept={['image/*']}
-                selected={!!options.thumbnail}
+                image={thumbnailData}
                 disabled={disabled}
-                onFileSelect={setThumbnail}
-              >
-                {options.thumbnail ? (
-                  <Image
-                    src={options.thumbnail.blobUrl}
-                    alt=''
-                    width={960}
-                    height={540}
-                    unoptimized
-                  />
-                ) : (
-                  <>
-                    <ImageIcon />
-                    이미지를 드롭하거나 선택
-                  </>
-                )}
-              </FileSelectZone>
+                onImageChange={setThumbnail}
+              />
               {error?.type == 'mustSelectThumbnail' && (
                 <FieldError>{error.message}</FieldError>
               )}
@@ -161,16 +148,12 @@ const ProjectOptionsUI = observer(
               data-invalid={error?.type == 'mustSelectBGM'}
             >
               <FieldLabel htmlFor='bgm'>BGM</FieldLabel>
-              <FileSelectZone
+              <BGMSelectZone
                 id='bgm'
-                accept={['audio/*']}
-                selected={!!options.bgm}
                 disabled={disabled}
-                onFileSelect={setBGM}
-              >
-                <Music4Icon />
-                BGM을 드롭하거나 선택
-              </FileSelectZone>
+                sound={bgmData}
+                onSoundChange={setBGM}
+              />
               {error?.type == 'mustSelectBGM' && (
                 <FieldError>{error.message}</FieldError>
               )}
@@ -336,18 +319,23 @@ const ProjectItemOptionsUI = observer(
         {options.mergeMode == 'kinetic' && (
           <Field>
             <FieldLabel>타임스탬프</FieldLabel>
-            <NumberInput
-              value={startTimestamp}
-              min={0}
-              step='any'
-              onValueChange={setStartTimestamp}
-            />
-            <NumberInput
-              value={endTimestamp}
-              min={0}
-              step='any'
-              onValueChange={setEndTimestamp}
-            />
+            <div className='flex gap-1 items-center'>
+              <NumberInput
+                value={startTimestamp}
+                min={0}
+                step='any'
+                onValueChange={setStartTimestamp}
+                aria-label='시작 타임스팸프'
+              />
+              <span>~</span>
+              <NumberInput
+                value={endTimestamp}
+                min={0}
+                step='any'
+                onValueChange={setEndTimestamp}
+                aria-label='끝 타임스탬프'
+              />
+            </div>
           </Field>
         )}
         <Field>
@@ -372,6 +360,7 @@ export const ProjectMergeUI = observer((props: ProjectMergeUIProps) => {
   const [error, setError] = useState('')
 
   const [optionError, setOptionError] = useState<OptionError>()
+  const [optionsOpen, setOptionsOpen] = useState(false)
 
   const handleChangeProjectList = useCallback((error?: string) => {
     setError(error || '')
@@ -389,7 +378,13 @@ export const ProjectMergeUI = observer((props: ProjectMergeUIProps) => {
         `output_${options.mergeMode}.ent`
       )
     } catch (e) {
-      if (e instanceof OptionError) return setOptionError(e)
+      if (e instanceof OptionError) {
+        if (['mustSelectThumbnail', 'mustSelectBGM'].includes(e.type)) {
+          setOptionsOpen(true)
+        }
+        setOptionError(e)
+        return
+      }
       console.error(e)
       setError(String(e))
     } finally {
@@ -410,7 +405,7 @@ export const ProjectMergeUI = observer((props: ProjectMergeUIProps) => {
         disabled={merging}
         onChange={handleChangeProjectList}
       />
-      <Collapsible>
+      <Collapsible open={optionsOpen} onOpenChange={setOptionsOpen}>
         <div className='flex gap-2'>
           <CollapsibleTrigger asChild>
             <Button
