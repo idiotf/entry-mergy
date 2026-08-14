@@ -36,6 +36,7 @@
   },
   "dependencies": {
     "@entry-mergy/async-iterable-controller": "workspace:*",
+    "@entry-mergy/entry-utils": "workspace:*",
     "@entry-mergy/project-loader-types": "workspace:*"
   }
 }
