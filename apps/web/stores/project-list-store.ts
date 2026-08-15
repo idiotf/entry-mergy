@@ -11,6 +11,7 @@ type MaybePromise<T> = Promise<T> | T
 
 interface BlobAsset {
   name: string
+  size: number | Promise<number>
   data: Promise<Blob>
 }
 
@@ -30,6 +31,7 @@ function convertAssetsToBlob(
           const blob = new Response(asset.data).blob()
           const blobAsset = {
             name: asset.name,
+            size: asset.size,
             data: blob,
           }
           controller.enqueue(blobAsset).then(iterate)

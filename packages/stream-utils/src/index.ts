@@ -58,3 +58,34 @@ export async function takeBytesFromWebStream(
     if (len == limit) return data
   }
 }
+
+export function promiseStreamToStream<T>(
+  streamPromise: Promise<ReadableStream<T>>
+) {
+  const readerPromise = streamPromise.then((stream) => stream.getReader())
+
+  return new ReadableStream<T>({
+    start(controller) {
+      readerPromise.catch((reason) => controller.error(reason))
+    },
+    async pull(controller) {
+      try {
+        const reader = await readerPromise
+        const data = await reader.read()
+        if (data.done) controller.close()
+        else controller.enqueue(data.value)
+      } catch (e) {
+        controller.error(e)
+      }
+    },
+    async cancel(reason) {
+      try {
+        const reader = await readerPromise
+        return reader.cancel(reason)
+      } catch {
+        // The underlying stream may not be available.
+        // Cancellation does not need to propagate this error.
+      }
+    },
+  })
+}

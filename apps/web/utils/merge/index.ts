@@ -1,6 +1,7 @@
 import { Project, type MergeOptions, mergeAllAsync } from '@entry-mergy/core'
 import { mergeAllKineticAsync } from '@entry-mergy/kinetic'
 import { minifyProject } from '@entry-mergy/entry-project-optimizer'
+import { promiseStreamToStream } from '@entry-mergy/stream-utils'
 import {
   getImageFileurlFrom,
   getSoundFileurlFrom,
@@ -139,18 +140,7 @@ async function mergeProjectsViaKinetic(
 
 function convertPromiseBlobToStream(blob: Promise<Blob>) {
   const stream = blob.then((blob) => blob.stream())
-  const reader = stream.then((stream) => stream.getReader())
-
-  return new ReadableStream<Uint8Array<ArrayBuffer>>({
-    async pull(controller) {
-      const data = await (await reader).read()
-      if (data.done) controller.close()
-      else controller.enqueue(data.value)
-    },
-    async cancel(reason) {
-      return (await stream).cancel(reason)
-    },
-  })
+  return promiseStreamToStream(stream)
 }
 
 async function* iterateAllAssets({
@@ -165,18 +155,24 @@ async function* iterateAllAssets({
 
     yield {
       name: getImageFileurlFrom(thumbnail.hash, thumbnail.format),
+      size: thumbnail.file.size,
       data: thumbnail.file.stream(),
     }
     yield {
       name: getSoundFileurlFrom(bgm.hash, bgm.format),
+      size: bgm.file.size,
       data: bgm.file.stream(),
     }
   }
 
   for (const { assets } of projects) {
     if (!assets) continue
-    for await (const { name, data } of assets) {
-      yield { name, data: convertPromiseBlobToStream(data) }
+    for await (const { name, size, data } of assets) {
+      yield {
+        name,
+        size,
+        data: convertPromiseBlobToStream(data),
+      }
     }
   }
 }

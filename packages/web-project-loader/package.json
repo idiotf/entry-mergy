@@ -48,6 +48,7 @@
     "@entry-mergy/entry-utils": "workspace:*",
     "@entry-mergy/project-loader-base": "workspace:*",
     "@entry-mergy/project-loader-types": "workspace:*",
+    "@entry-mergy/stream-utils": "workspace:*",
     "zod": "^4.4.3"
   }
 }

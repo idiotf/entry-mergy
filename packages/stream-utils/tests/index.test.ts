@@ -5,6 +5,7 @@ import {
   convertNodeStreamToWebStream,
   iterateWebStream,
   pipeWebStreamToNodeStream,
+  promiseStreamToStream,
   takeBytesFromWebStream,
 } from '../src'
 
@@ -98,4 +99,24 @@ it('takeBytesFromWebStream', async () => {
   await testTaking(5, new Uint8Array([0x00, 0x01, 0x02, 0x03, 0x04]))
   await testTaking(6, new Uint8Array([0x00, 0x01, 0x02, 0x03, 0x04, 0x05]))
   await testTaking(7, new Uint8Array([0x00, 0x01, 0x02, 0x03, 0x04, 0x05]))
+})
+
+it('promiseStreamToStream', async () => {
+  const streamPromise = Promise.resolve(
+    new ReadableStream<number>({
+      start(controller) {
+        controller.enqueue(1)
+        controller.enqueue(2)
+        controller.enqueue(3)
+        controller.close()
+      },
+    })
+  )
+
+  const stream = promiseStreamToStream(streamPromise)
+  let i = 0
+  for await (const value of iterateWebStream(stream)) {
+    assert.deepStrictEqual(value, ++i)
+  }
+  assert.strictEqual(i, 3)
 })

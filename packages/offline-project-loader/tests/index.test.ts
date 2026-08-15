@@ -63,4 +63,47 @@ describe('Importing offline project', () => {
     assert.strictEqual(await decode(beforeProjectJson), 'before project.json')
     assert.strictEqual(await decode(afterProjectJson), 'after project.json')
   })
+
+  it('Extracting multiple assets', async () => {
+    const { assets } = await expectToBeImported('assets-multiple')
+
+    const awaitedAssets = await Array.fromAsync(assets)
+    const assetsMap = new Map(awaitedAssets.map((v) => [v.name, v.data]))
+
+    const beforeProjectJson1 = assetsMap.get(
+      'temp/fa/ke/fakeassetfilebeforeprojectjson1.png'
+    )
+    const beforeProjectJson2 = assetsMap.get(
+      'temp/fa/ke/fakeassetfilebeforeprojectjson2.png'
+    )
+
+    const afterProjectJson1 = assetsMap.get(
+      'temp/fa/ke/fakeassetfileafterprojectjson1.png'
+    )
+    const afterProjectJson2 = assetsMap.get(
+      'temp/fa/ke/fakeassetfileafterprojectjson2.png'
+    )
+
+    assert(beforeProjectJson1 !== undefined)
+    assert(beforeProjectJson2 !== undefined)
+    assert(afterProjectJson1 !== undefined)
+    assert(afterProjectJson2 !== undefined)
+
+    assert.strictEqual(
+      await decode(beforeProjectJson1),
+      'before project.json (first)'
+    )
+    assert.strictEqual(
+      await decode(beforeProjectJson2),
+      'before project.json (second)'
+    )
+    assert.strictEqual(
+      await decode(afterProjectJson1),
+      'after project.json (first)'
+    )
+    assert.strictEqual(
+      await decode(afterProjectJson2),
+      'after project.json (second)'
+    )
+  })
 })

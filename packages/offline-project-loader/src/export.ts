@@ -1,33 +1,11 @@
-// TODO: use tar-stream instead of tar-js
-
-import Tar from 'tar-js'
+import { pack, type Pack } from 'tar-stream'
 import { generateHash } from '@entry-mergy/common-utils'
+import {
+  convertNodeStreamToWebStream,
+  pipeWebStreamToNodeStream,
+} from '@entry-mergy/stream-utils'
 import type { Asset } from '@entry-mergy/project-loader-types'
 import type { EntryObject, Project } from '@entry-mergy/entry-utils/types'
-
-function encodeUtf8(str: string) {
-  return new TextEncoder().encode(str)
-}
-
-function streamToUint8Array(stream: ReadableStream<Uint8Array<ArrayBuffer>>) {
-  return new Response(stream).bytes()
-}
-
-async function exportProjectToTar(
-  project: Project,
-  assets?: AsyncIterable<Asset>
-) {
-  const tar = new Tar()
-
-  tar.append('temp/project.json', encodeUtf8(JSON.stringify(project)))
-  if (assets) {
-    for await (const { name, data } of assets) {
-      tar.append(name, await streamToUint8Array(data))
-    }
-  }
-
-  return tar.out as Uint8Array<ArrayBuffer>
-}
 
 export function getImageFileurlFrom(filename: string, imageType: string) {
   return `temp/${filename.substring(0, 2)}/${filename.substring(2, 4)}/image/${filename}.${imageType}`
@@ -59,17 +37,35 @@ export function normalizeAssetPathToOffline(project: Project) {
   }
 }
 
-function gzipUint8ArrayToStream(arr: Promise<Uint8Array<ArrayBuffer>>) {
-  const gzipStream = new CompressionStream('gzip')
-  const writer = gzipStream.writable.getWriter()
-  arr.then(
-    (arr) => {
-      writer.write(arr)
-      writer.close()
-    },
-    (reason) => writer.abort(reason)
-  )
-  return gzipStream.readable
+async function addAssetsToTar(tar: Pack, assets: AsyncIterable<Asset>) {
+  const promises: Promise<void>[] = []
+  for await (const { name, size, data } of assets) {
+    const awaitedSize = await size
+    promises.push(new Promise((resolve, reject) => {
+      const stream = tar.entry({ name, size: awaitedSize }, (err) => {
+        if (err != null) reject(err)
+        else resolve()
+      })
+      pipeWebStreamToNodeStream(data, stream)
+    }))
+  }
+
+  await Promise.all(promises)
+  tar.finalize()
+}
+
+function exportProjectToTar(
+  project: Project,
+  assets?: AsyncIterable<Asset>
+): ReadableStream<Uint8Array<ArrayBuffer>> {
+  const tar = pack()
+  tar.entry({ name: 'temp/project.json' }, JSON.stringify(project))
+  if (assets) {
+    addAssetsToTar(tar, assets).catch((reason) => {
+      tar.emit('error', reason)
+    })
+  }
+  return convertNodeStreamToWebStream(tar)
 }
 
 export function exportProjectToOffline(
@@ -93,13 +89,8 @@ export function exportProjectToOffline(
   const tar = exportProjectToTar(projectCopy, assets)
 
   if (gzip) {
-    return gzipUint8ArrayToStream(tar)
+    return tar.pipeThrough(new CompressionStream('gzip'))
   } else {
-    return new ReadableStream<Uint8Array<ArrayBuffer>>({
-      async start(controller) {
-        controller.enqueue(await tar)
-        controller.close()
-      },
-    })
+    return tar
   }
 }

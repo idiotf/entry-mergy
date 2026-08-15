@@ -1,8 +1,7 @@
 'use client'
 
-import Image from 'next/image'
 import { useCallback, useId, useMemo, useState } from 'react'
-import { ChevronRight, ImageIcon, Music4Icon } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 import { observer } from 'mobx-react-lite'
 import { cn } from '@/lib/utils'
 import { FastSuspense } from '../fast-suspense'

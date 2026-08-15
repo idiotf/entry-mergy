@@ -22,10 +22,11 @@ class OfflineProject extends LoaderProject {
         project.resolveProject(
           new Response(convertNodeStreamToWebStream(stream)).json()
         )
-        project.backpressureAssets().then(next)
+        project.getOrCreateAssetsBackpressure().then(next)
       } else {
         const backpressure = project.queueAsset({
           name: header.name,
+          size: header.size || 0,
           data: convertNodeStreamToWebStream(stream),
         })
         if (project.projectDone) backpressure.then(next)

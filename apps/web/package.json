@@ -23,6 +23,7 @@
     "@entry-mergy/media-metadata": "workspace:*",
     "@entry-mergy/offline-project-loader": "workspace:*",
     "@entry-mergy/project-loader-types": "workspace:*",
+    "@entry-mergy/stream-utils": "workspace:*",
     "@entry-mergy/web-project-loader": "workspace:*",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

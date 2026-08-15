@@ -117,6 +117,7 @@ export class AsyncIterableController<
 > implements AsyncIterable<T, TReturn, TNext> {
   private backpressureQueue = new FIFO<(() => void) | null>()
   private backpressureLength = 0
+  private recentBackpressure?: Promise<void>
 
   private currentSubQueuesIndex = 0
   private subQueues: (FIFO<AsyncIteratingCallback<T, TReturn>> | null)[] = []
@@ -203,7 +204,7 @@ export class AsyncIterableController<
   }
 
   backpressure() {
-    return new Promise<void>((resolve) => {
+    return this.recentBackpressure = new Promise<void>((resolve) => {
       if (this.subQueues.length > this.backpressureLength++) {
         this.backpressureQueue.push(null)
         resolve()
@@ -211,6 +212,14 @@ export class AsyncIterableController<
         this.backpressureQueue.push(resolve)
       }
     })
+  }
+
+  getRecentBackpressure() {
+    return this.recentBackpressure
+  }
+
+  getOrCreateBackpressure() {
+    return this.recentBackpressure || this.backpressure()
   }
 
   return(): void

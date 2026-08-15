@@ -14,8 +14,3 @@
 - `analyzeProject` 함수 구현
 - `handleMultipleScenes` 함수 구현 (초시계 초기화하기 이전에 `__time__` += 초시계 값 추가)
 - `guessProjectTimestamp` 함수 구현
-
-## offline-project-loader
-
-- `exportProjectToOffline` 함수 마저 구현
-- `importProjectFromOffline` 함수 마저 구현

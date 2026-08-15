@@ -2,6 +2,7 @@ import type { Project } from '@entry-mergy/entry-utils/types'
 
 export interface Asset {
   name: string
+  get size(): number | Promise<number>
   /**
    * Lazily creates and caches the underlying ReadableStream.
    *

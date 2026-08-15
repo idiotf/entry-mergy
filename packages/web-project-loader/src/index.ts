@@ -1,4 +1,5 @@
 import { LoaderProject } from '@entry-mergy/project-loader-base'
+import { promiseStreamToStream } from '@entry-mergy/stream-utils'
 import {
   selectProjectMany,
   type EntryGraphQLClient,
@@ -7,35 +8,101 @@ import {
 import type { Project } from '@entry-mergy/entry-utils/types'
 import type { CommonProjectLink } from './utils'
 
-function loadAsset(path: string) {
-  const abortController = new AbortController()
+// function loadAsset(path: string) {
+//   const abortController = new AbortController()
 
-  return new ReadableStream<Uint8Array<ArrayBuffer>>({
-    async start(controller) {
-      const { body } = await fetch(new URL(path, 'https://playentry.org'), {
-        signal: abortController.signal,
-      })
-      if (!body) return controller.close()
+//   return new ReadableStream<Uint8Array<ArrayBuffer>>({
+//     async start(controller) {
+//       const { body } = await fetch(new URL(path, 'https://playentry.org'), {
+//         signal: abortController.signal,
+//       })
+//       if (!body) return controller.close()
 
-      const reader = body.getReader()
-      for (;;) {
-        const { done, value } = await reader.read()
-        if (done) break
-        controller.enqueue(value)
-      }
-    },
-    cancel(reason) {
-      abortController.abort(reason)
-    },
-  })
+//       const reader = body.getReader()
+//       for (;;) {
+//         const { done, value } = await reader.read()
+//         if (done) break
+//         controller.enqueue(value)
+//       }
+//     },
+//     cancel(reason) {
+//       abortController.abort(reason)
+//     },
+//   })
+// }
+
+type ByteStream = ReadableStream<Uint8Array<ArrayBuffer>>
+
+interface AssetResponseData {
+  res: Response
+  bodyForSize: ByteStream | undefined
+  bodyForData: ByteStream | undefined
+}
+
+async function requestAssetData(
+  innerPath: string
+): Promise<AssetResponseData> {
+  const res = await fetch(new URL(innerPath, 'https://playentry.org/uploads/'))
+
+  const bodyTee = res.body?.tee()
+  const bodyForSize = bodyTee?.[0]
+  const bodyForData = bodyTee?.[1]
+
+  return { res, bodyForSize, bodyForData }
+}
+
+async function getSizeFromResponse({ res, bodyForSize }: AssetResponseData) {
+  const contentLengthHeader = res.headers.get('content-length')
+  const contentLength =
+    contentLengthHeader !== null
+      ? parseInt(contentLengthHeader, 10)
+      : null
+
+  if (contentLength !== null && !isNaN(contentLength)) {
+    bodyForSize?.cancel()
+    return contentLength
+  }
+
+  if (!bodyForSize)
+    throw TypeError('web-project-loader: Cannot read size of asset')
+
+  const reader = bodyForSize.getReader()
+  for (let size = 0;;) {
+    const { done, value } = await reader.read()
+    if (done) return size
+    size += value.byteLength
+  }
+}
+
+function getDataFromResponse({ bodyForData }: AssetResponseData) {
+  if (!bodyForData) {
+    return new ReadableStream({
+      start(controller) {
+        controller.close()
+      },
+    })
+  }
+  return bodyForData
 }
 
 function getAssetFromPath(innerPath: string) {
+  let cache: Promise<AssetResponseData> | undefined
+  let size: Promise<number> | undefined
   let data: ReadableStream<Uint8Array<ArrayBuffer>> | undefined
+
+  function getOrRequestResponse() {
+    return (cache ||= requestAssetData(innerPath))
+  }
+
   return {
     name: 'temp/' + innerPath,
+    get size() {
+      return (size ??= getOrRequestResponse().then(getSizeFromResponse))
+    },
     get data() {
-      return (data ||= loadAsset('/uploads/' + innerPath))
+      return (data ||= promiseStreamToStream(
+        getOrRequestResponse().then(getDataFromResponse)
+      ))
     },
   }
 }

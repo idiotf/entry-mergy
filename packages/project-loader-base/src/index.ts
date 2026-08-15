@@ -49,6 +49,14 @@ export abstract class LoaderProject implements ImportedProject {
     return this.assetsIterableController.backpressure()
   }
 
+  protected getRecentAssetsBackpressure() {
+    return this.assetsIterableController.getRecentBackpressure()
+  }
+
+  protected getOrCreateAssetsBackpressure() {
+    return this.assetsIterableController.getOrCreateBackpressure()
+  }
+
   protected resolveProject(project: Project | PromiseLike<Project>) {
     this.resolveProjectRaw(project)
     this.projectController.abort()
