@@ -14,3 +14,7 @@
 - `analyzeProject` 함수 구현
 - `handleMultipleScenes` 함수 구현 (초시계 초기화하기 이전에 `__time__` += 초시계 값 추가)
 - `guessProjectTimestamp` 함수 구현
+
+# misc
+
+- 병합 시 assets / export 성능 개선
