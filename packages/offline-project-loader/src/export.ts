@@ -38,19 +38,11 @@ export function normalizeAssetPathToOffline(project: Project) {
 }
 
 async function addAssetsToTar(tar: Pack, assets: AsyncIterable<Asset>) {
-  const promises: Promise<void>[] = []
   for await (const { name, size, data } of assets) {
-    const awaitedSize = await size
-    promises.push(new Promise((resolve, reject) => {
-      const stream = tar.entry({ name, size: awaitedSize }, (err) => {
-        if (err != null) reject(err)
-        else resolve()
-      })
-      pipeWebStreamToNodeStream(data, stream)
-    }))
+    const stream = tar.entry({ name, size: await size })
+    await pipeWebStreamToNodeStream(data, stream)
   }
 
-  await Promise.all(promises)
   tar.finalize()
 }
 
