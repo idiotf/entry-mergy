@@ -9,6 +9,10 @@
 
 # packages
 
+## core
+
+- `preserveVar` 버그 수정
+
 ## kinetic
 
 - `analyzeProject` 함수 구현
