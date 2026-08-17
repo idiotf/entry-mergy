@@ -220,7 +220,7 @@ export class MergeUIOptionsStore implements ProjectListStore {
   }
 
   private migrateOption(from: ProjectState, to: ProjectState) {
-    this.timestampMap.migrateTimestamp(from, to)
+    this.timestampsMap.migrateTimestamp(from, to)
   }
 
   private initOptions() {
@@ -246,6 +246,7 @@ export class MergeUIOptionsStore implements ProjectListStore {
     const reloaded = this.projectListStore.reloadProject(i)
     this.migrateOption(prev, reloaded)
     this.initOptions()
+    return reloaded
   }
 
   removeProject(i: number) {
