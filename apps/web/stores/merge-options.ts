@@ -121,6 +121,12 @@ class TimestampsStore {
     this.isGuessedEndTimestamp.delete(state)
   }
 
+  migrateTimestamp(from: ProjectState, to: ProjectState) {
+    if (!this.map.has(from)) return
+    this.map.set(to, this.map.get(from))
+    this.map.delete(from)
+  }
+
   removeTimestamp(i: number) {
     const state = this.projects[i]!
     this.map.delete(state)
@@ -210,11 +216,19 @@ export class MergeUIOptionsStore implements ProjectListStore {
 
   setMergeMode(mode: MergeMode) {
     this.mergeMode = mode
-    if (mode == 'kinetic') this.initKineticOptions()
+    this.initOptions()
+  }
+
+  private migrateOption(from: ProjectState, to: ProjectState) {
+    this.timestampMap.migrateTimestamp(from, to)
   }
 
   private initOptions() {
     if (this.mergeMode == 'kinetic') this.initKineticOptions()
+  }
+
+  private cleanupOption(i: number) {
+    this.timestampsMap.removeTimestamp(i)
   }
 
   addProjectByLink(links: ProjectLinkIncludeShorten[]) {
@@ -228,12 +242,14 @@ export class MergeUIOptionsStore implements ProjectListStore {
   }
 
   reloadProject(i: number) {
-    this.projectListStore.reloadProject(i)
+    const prev = this.projects[i]!
+    const reloaded = this.projectListStore.reloadProject(i)
+    this.migrateOption(prev, reloaded)
     this.initOptions()
   }
 
   removeProject(i: number) {
-    this.timestampsMap.removeTimestamp(i)
+    this.cleanupOption(i)
     this.projectListStore.removeProject(i)
   }
 
