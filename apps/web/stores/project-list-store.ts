@@ -362,6 +362,7 @@ export class ProjectListStore {
         ? loadProjectsByFile([origin])
         : loadProjectsByLink([origin])
     this.projectsStore.set(i, project)
+    return project
   }
 
   removeProject(i: number) {
