@@ -17,7 +17,7 @@ export type MergeMode = 'core' | 'kinetic'
 
 export class MergeUICoreOptions {
   shareVariables = new ListStore<string>()
-  shareFunctions = true
+  shareFunctions = false
 
   constructor() {
     makeAutoObservable(this)
