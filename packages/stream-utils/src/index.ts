@@ -1,28 +1,78 @@
+import { once } from 'node:events'
 import type { Readable, Writable } from 'stream'
 
-export function pipeWebStreamToNodeStream<T>(
+function asError(e: unknown) {
+  return e instanceof Error ? e : Error(String(e))
+}
+
+export async function pipeWebStreamToNodeStream<T>(
   src: ReadableStream<T>,
   dst: Writable
 ) {
   const reader = src.getReader()
 
-  function pipeItem() {
-    reader.read().then((v) => {
-      if (v.done) return dst.end()
-      dst.write(v.value)
-      pipeItem()
-    })
-  }
+  try {
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) {
+        dst.end()
+        return
+      }
 
-  pipeItem()
+      if (!dst.write(value)) {
+        await once(dst, 'drain')
+      }
+    }
+  } catch (e) {
+    reader.cancel(e).catch(() => {})
+    dst.destroy(asError(e))
+    throw e
+  } finally {
+    reader.releaseLock()
+  }
 }
 
 export function convertNodeStreamToWebStream(src: Readable) {
   return new ReadableStream({
     start(controller) {
-      src.on('data', (chunk) => controller.enqueue(chunk))
-      src.on('end', () => controller.close())
-      src.on('error', (e) => controller.error(e))
+      function onData(chunk: Uint8Array) {
+        controller.enqueue(chunk)
+
+        if (controller.desiredSize !== null &&
+controller.desiredSize <= 0) {
+          src.pause()
+        }
+      }
+
+      function onEnd() {
+        cleanup()
+        controller.close()
+      }
+
+      function onError(e: Error) {
+        cleanup()
+        controller.error(e)
+      }
+
+      function cleanup() {
+        src.off('data', onData)
+        src.off('end', onEnd)
+        src.off('error', onError)
+      }
+
+      src.on('data', onData)
+      src.once('end', onEnd)
+      src.once('error', onError)
+
+      src.pause()
+    },
+
+    pull() {
+      src.resume()
+    },
+
+    cancel(reason) {
+      src.destroy(asError(reason))
     },
   })
 }
