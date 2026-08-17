@@ -98,12 +98,12 @@ const ProjectOptionsUI = observer(
       [options]
     )
 
-    const setShareFunctions = useCallback(
-      (value: boolean) => {
-        options.coreOptions.setShareFunctions(value)
-      },
-      [options]
-    )
+    // const setShareFunctions = useCallback(
+    //   (value: boolean) => {
+    //     options.coreOptions.setShareFunctions(value)
+    //   },
+    //   [options]
+    // )
 
     return (
       <FieldGroup className='mt-2'>
@@ -198,7 +198,7 @@ const ProjectOptionsUI = observer(
             store={options.coreOptions.preserveVar}
           />
         </Field>
-        <Field data-disabled={disabled}>
+        {/* <Field data-disabled={disabled}>
           <FieldLabel htmlFor='shareFunctions'>작품 간 함수 공유</FieldLabel>
           <Switch
             id='shareFunctions'
@@ -206,7 +206,7 @@ const ProjectOptionsUI = observer(
             disabled={disabled}
             onCheckedChange={setShareFunctions}
           />
-        </Field>
+        </Field> */}
       </FieldGroup>
     )
   }

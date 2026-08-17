@@ -260,7 +260,12 @@ export function mergePreProcessedProject(
     })
   )
 
-  if (shareFunctions) replaceFuncRef(map, src.functions)
+  if (shareFunctions) {
+    replaceFuncRef(map, src.functions)
+    for (const func of src.functions) {
+      func.content = JSON.stringify(func.parsedContent)
+    }
+  }
   copyRef(
     map,
     dst.functions,
