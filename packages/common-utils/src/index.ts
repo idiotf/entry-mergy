@@ -1,7 +1,20 @@
 // #region Objects
 
 export const isObject = (v: unknown) => !!(typeof v == 'object' && v)
-export const deepCopy = <T>(obj: T): T => JSON.parse(JSON.stringify(obj))
+
+export function deepCopy<T>(obj: T): T {
+  if (!obj || typeof obj != 'object') return obj
+
+  if (obj instanceof Array) {
+    return obj.map(deepCopy) as T
+  }
+
+  const copy = { ...obj }
+  for (const k in obj) {
+    copy[k] = deepCopy(obj[k])
+  }
+  return copy
+}
 
 // #endregion
 // #region Assertion

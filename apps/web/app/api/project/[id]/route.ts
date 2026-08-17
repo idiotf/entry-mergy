@@ -55,7 +55,7 @@ export async function GET(
 
         return {
           id,
-          project: minifyProject(project),
+          project: minifyProject(project, { convertScriptToObject: true }),
         }
       })
     )

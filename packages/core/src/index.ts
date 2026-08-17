@@ -5,6 +5,7 @@ import {
   type IdObject,
   type Variable,
   type Func,
+  type EntryObject,
 } from '@entry-mergy/entry-utils/types'
 
 export { Project }
@@ -58,18 +59,18 @@ function changeIdUnique<T extends IdObject>(
   return obj
 }
 
-type MustShareDecider<T> = (
-  dstObj: T,
-  srcObj: T,
-  dstMap: Map<string, T>,
-  srcMap: Map<string, T>
+type MustShareDecider<Dst, Src> = (
+  dstObj: Dst,
+  srcObj: Src,
+  dstMap: Map<string, Dst>,
+  srcMap: Map<string, Src>
 ) => boolean
 
-function copyRef<T extends IdObject>(
+function copyRef<Dst extends IdObject, Src extends Dst>(
   idCollisionMap: Map<string, string>,
-  dst: T[],
-  src: T[],
-  mustShare?: MustShareDecider<T>,
+  dst: Dst[],
+  src: Src[],
+  mustShare?: MustShareDecider<Dst, Src>,
   prefix = ''
 ) {
   const dstMap = new Map(dst.map((v) => [v.id, v]))
@@ -145,21 +146,16 @@ function getBlockDeps(block: unknown) {
   return deps
 }
 
-function getFuncDeps(func: Func) {
-  try {
-    const content: unknown = JSON.parse(func.content)
-    return getScriptDeps(content)
-  } catch {
-    return []
-  }
+function getFuncDeps(func: PreProcessedFunc) {
+  return getScriptDeps(func.parsedContent)
 }
 
 function checkMustShareFunc(
   memo: WeakMap<Func, boolean>,
   dst: Func,
-  src: Func,
+  src: PreProcessedFunc,
   dstMap: Map<string, Func>,
-  srcMap: Map<string, Func>,
+  srcMap: Map<string, PreProcessedFunc>,
   visited = new WeakSet<Func>()
 ): boolean {
   const memoized = memo.get(src)
@@ -181,9 +177,55 @@ function checkMustShareFunc(
   return canShare
 }
 
-function replaceFuncRef(map: Map<string, string>, functions: Func[]) {
-  for (const func of functions)
-    func.content = JSON.stringify(parseScript(map, JSON.parse(func.content)))
+function replaceFuncRef(
+  map: Map<string, string>,
+  functions: PreProcessedFunc[]
+) {
+  for (const func of functions) {
+    parseScript(map, func.parsedContent)
+  }
+}
+
+interface PreProcessedProject extends Project {
+  objects: PreProcessedEntryObject[]
+  functions: PreProcessedFunc[]
+}
+
+interface PreProcessedEntryObject extends EntryObject {
+  parsedScript?: unknown
+}
+
+interface PreProcessedFunc extends Func {
+  parsedContent?: unknown
+}
+
+export function preProcess(project: Project): PreProcessedProject {
+  const projectCopy = deepCopy(project)
+
+  return Object.assign(projectCopy, {
+    objects: projectCopy.objects.map((obj) => Object.assign(obj, {
+      parsedScript: getScriptOf(obj),
+    })),
+    functions: projectCopy.functions.map((func) => Object.assign(func, {
+      parsedContent: JSON.parse(func.content),
+    })),
+  })
+}
+
+export function replacePreProcessed(project: Project) {
+  for (const obj of project.objects) {
+    if ('parsedScript' in obj) {
+      setScriptOf(obj, obj.parsedScript)
+      obj.parsedScript = undefined
+    }
+  }
+
+  for (const func of project.functions) {
+    if ('parsedContent' in func) {
+      func.content = JSON.stringify(func.parsedContent)
+      func.parsedContent = undefined
+    }
+  }
 }
 
 export interface MergeOptions {
@@ -191,15 +233,14 @@ export interface MergeOptions {
   shareFunctions?: boolean | undefined
 }
 
-export function mergeProject(
-  dst: Project,
-  src: Project,
+export function mergePreProcessedProject(
+  dst: PreProcessedProject,
+  src: PreProcessedProject,
   options: MergeOptions = {}
 ) {
   const { preserveVar = [], shareFunctions } = options
 
   const map = new Map<string, string>()
-  src = deepCopy(src)
 
   const filteredVariables = src.variables.filter((v) =>
     filterVariable(v, preserveVar)
@@ -219,7 +260,7 @@ export function mergeProject(
     })
   )
 
-  replaceFuncRef(map, src.functions)
+  if (shareFunctions) replaceFuncRef(map, src.functions)
   copyRef(
     map,
     dst.functions,
@@ -229,14 +270,26 @@ export function mergeProject(
   )
   replaceFuncRef(map, src.functions)
 
-  for (const obj of src.objects)
-    setScriptOf(obj, parseScript(map, getScriptOf(obj)))
+  for (const obj of src.objects) {
+    parseScript(map, obj.parsedScript)
+  }
 
   for (const variable of filteredVariables) {
     const id = variable.object && map.get(variable.object)
     if (id) variable.object = id
   }
 
+  return dst
+}
+
+export function mergeProject(
+  dst: Project,
+  src: Project,
+  options: MergeOptions = {}
+) {
+  const preProcessedSrc = preProcess(src)
+  mergePreProcessedProject(dst, preProcessedSrc, options)
+  replacePreProcessed(preProcessedSrc)
   return dst
 }
 

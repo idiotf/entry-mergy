@@ -183,5 +183,5 @@ export async function mergeProjectsToOffline(options: MergeUIOptionsStore) {
   const optimized = minifyProject(merged)
 
   const assets = iterateAllAssets(options)
-  return exportProjectToOffline(optimized, assets, true)
+  return exportProjectToOffline(optimized, assets, false)
 }
