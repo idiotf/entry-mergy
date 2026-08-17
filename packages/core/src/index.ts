@@ -12,7 +12,7 @@ export { Project }
 
 const funcPrefix = 'func_'
 const primitiveBlocks = ['number', 'angle', 'text']
-const preserveVarTypes = ['answer', 'timer']
+const ignoreVarTypes = ['answer', 'timer']
 
 function parseBlocks(map: Map<string, string>, blocks: unknown) {
   if (!Array.isArray(blocks)) return
@@ -89,10 +89,6 @@ function copyRef<Dst extends IdObject, Src extends Dst>(
     )
   )
 }
-
-const filterVariable = (variable: Variable, preserveVar: string[]) =>
-  !preserveVar.includes(variable.name) &&
-  !preserveVarTypes.includes(variable.variableType)
 
 function seemsLikeSharableFunc(dst: Func, src: Func) {
   if (dst.content != src.content) return false
@@ -186,16 +182,16 @@ function replaceFuncRef(
   }
 }
 
-interface PreProcessedProject extends Project {
+export interface PreProcessedProject extends Project {
   objects: PreProcessedEntryObject[]
   functions: PreProcessedFunc[]
 }
 
-interface PreProcessedEntryObject extends EntryObject {
+export interface PreProcessedEntryObject extends EntryObject {
   parsedScript?: unknown
 }
 
-interface PreProcessedFunc extends Func {
+export interface PreProcessedFunc extends Func {
   parsedContent?: unknown
 }
 
@@ -229,7 +225,7 @@ export function replacePreProcessed(project: Project) {
 }
 
 export interface MergeOptions {
-  preserveVar?: string[] | undefined
+  shareVariables?: string[] | undefined
   shareFunctions?: boolean | undefined
 }
 
@@ -238,13 +234,24 @@ export function mergePreProcessedProject(
   src: PreProcessedProject,
   options: MergeOptions = {}
 ) {
-  const { preserveVar = [], shareFunctions } = options
+  const { shareVariables = [], shareFunctions } = options
 
   const map = new Map<string, string>()
 
-  const filteredVariables = src.variables.filter((v) =>
-    filterVariable(v, preserveVar)
-  )
+  const filteredVariables: Variable[] = []
+  for (const variable of src.variables) {
+    if (ignoreVarTypes.includes(variable.variableType)) continue
+
+    if (shareVariables.includes(variable.name)) {
+      const dstVariable = dst.variables.find((v) => v.name == variable.name)
+      if (dstVariable) {
+        map.set(variable.id, dstVariable.id)
+        continue
+      }
+    }
+
+    filteredVariables.push(variable)
+  }
 
   copyRef(map, dst.messages, src.messages)
   copyRef(map, dst.scenes, src.scenes)

@@ -16,7 +16,7 @@ import type { ProjectLinkIncludeShorten } from '@entry-mergy/web-project-loader/
 export type MergeMode = 'core' | 'kinetic'
 
 export class MergeUICoreOptions {
-  preserveVar = new ListStore<string>()
+  shareVariables = new ListStore<string>()
   shareFunctions = true
 
   constructor() {

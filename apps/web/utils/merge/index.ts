@@ -78,7 +78,7 @@ function mergeSelectedProjects(
 function resolveCoreOptions(options: MergeUICoreOptions): MergeOptions {
   return {
     ...options,
-    preserveVar: options.preserveVar.items.map((v) => v.value),
+    shareVariables: options.shareVariables.values,
   }
 }
 

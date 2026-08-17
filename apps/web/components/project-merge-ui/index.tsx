@@ -195,7 +195,7 @@ const ProjectOptionsUI = observer(
           <FieldLabel>작품 간 공유할 변수·리스트</FieldLabel>
           <ListInput
             disabled={disabled}
-            store={options.coreOptions.preserveVar}
+            store={options.coreOptions.shareVariables}
           />
         </Field>
         {/* <Field data-disabled={disabled}>
