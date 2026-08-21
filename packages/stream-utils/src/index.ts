@@ -38,8 +38,7 @@ export function convertNodeStreamToWebStream(src: Readable) {
       function onData(chunk: Uint8Array) {
         controller.enqueue(chunk)
 
-        if (controller.desiredSize !== null &&
-controller.desiredSize <= 0) {
+        if (controller.desiredSize !== null && controller.desiredSize <= 0) {
           src.pause()
         }
       }
