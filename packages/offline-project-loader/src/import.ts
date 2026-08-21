@@ -27,7 +27,9 @@ class OfflineProject extends LoaderProject {
         const backpressure = project.queueAsset({
           name: header.name,
           size: header.size || 0,
-          data: convertNodeStreamToWebStream(stream),
+          data: convertNodeStreamToWebStream(stream, {
+            autoDrain: !project.projectDone,
+          }),
         })
         if (project.projectDone) backpressure.then(next)
         else next()

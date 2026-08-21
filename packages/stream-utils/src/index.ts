@@ -32,13 +32,26 @@ export async function pipeWebStreamToNodeStream<T>(
   }
 }
 
-export function convertNodeStreamToWebStream(src: Readable) {
+interface NodeToWebStreamOptions {
+  autoDrain?: boolean
+}
+
+export function convertNodeStreamToWebStream(
+  src: Readable,
+  options: NodeToWebStreamOptions = {}
+) {
+  const { autoDrain = false } = options
+
   return new ReadableStream({
     start(controller) {
       function onData(chunk: Uint8Array) {
         controller.enqueue(chunk)
 
-        if (controller.desiredSize !== null && controller.desiredSize <= 0) {
+        if (
+          !autoDrain &&
+          controller.desiredSize !== null &&
+          controller.desiredSize <= 0
+        ) {
           src.pause()
         }
       }
@@ -63,7 +76,8 @@ export function convertNodeStreamToWebStream(src: Readable) {
       src.once('end', onEnd)
       src.once('error', onError)
 
-      src.pause()
+      if (autoDrain) src.resume()
+      else src.pause()
     },
 
     pull() {
