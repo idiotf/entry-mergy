@@ -1,11 +1,17 @@
 import { Project, type MergeOptions, mergeAllAsync } from '@entry-mergy/core'
-import { mergeAllKineticAsync } from '@entry-mergy/kinetic'
+import {
+  mergeAllKineticAsync,
+  type BGM,
+  type KineticMergeOptions,
+  type Thumbnail,
+} from '@entry-mergy/kinetic'
 import { minifyProject } from '@entry-mergy/entry-project-optimizer'
 import { promiseStreamToStream } from '@entry-mergy/stream-utils'
 import {
   getImageFileurlFrom,
   getSoundFileurlFrom,
   exportProjectToOffline,
+  getThumbFileurlFrom,
 } from '@entry-mergy/offline-project-loader'
 import type {
   MergeUIOptionsStore,
@@ -104,7 +110,7 @@ async function mergeProjectsViaKinetic(
 
   const timestamps = options.timestamps as number[]
 
-  const thumbnail = {
+  const thumbnail: Thumbnail = {
     hash: options.thumbnail.hash,
     url: options.thumbnail.assetPath,
     format: options.thumbnail.format,
@@ -112,7 +118,7 @@ async function mergeProjectsViaKinetic(
     height: await options.thumbnail.height,
   }
 
-  const bgm = {
+  const bgm: BGM = {
     hash: options.bgm.hash,
     url: options.bgm.assetPath,
     format: options.bgm.format,
@@ -125,7 +131,7 @@ async function mergeProjectsViaKinetic(
     ? { useCache: options.useBGMCache }
     : false
 
-  const resolvedOptions = {
+  const resolvedOptions: KineticMergeOptions = {
     timestamps,
     thumbnail,
     bgm,
@@ -155,6 +161,11 @@ async function* iterateAllAssets({
 
     yield {
       name: getImageFileurlFrom(thumbnail.hash, thumbnail.format),
+      size: thumbnail.file.size,
+      data: thumbnail.file.stream(),
+    }
+    yield {
+      name: getThumbFileurlFrom(thumbnail.hash, thumbnail.format),
       size: thumbnail.file.size,
       data: thumbnail.file.stream(),
     }

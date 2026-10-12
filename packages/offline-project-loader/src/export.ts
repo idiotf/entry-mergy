@@ -11,6 +11,10 @@ export function getImageFileurlFrom(filename: string, imageType: string) {
   return `temp/${filename.substring(0, 2)}/${filename.substring(2, 4)}/image/${filename}.${imageType}`
 }
 
+export function getThumbFileurlFrom(filename: string, imageType: string) {
+  return `temp/${filename.substring(0, 2)}/${filename.substring(2, 4)}/thumb/${filename}.${imageType}`
+}
+
 export function getSoundFileurlFrom(filename: string, ext: string) {
   return `temp/${filename.substring(0, 2)}/${filename.substring(2, 4)}/${filename}${ext}`
 }

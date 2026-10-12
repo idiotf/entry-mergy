@@ -198,14 +198,13 @@ export interface Dimension {
 }
 
 export class Picture extends IdObject {
-  thumbUrl?
-
   constructor(
     name: string,
     imageType: string,
     dimension: Dimension,
     fileurl: string | undefined | null,
-    filename: string
+    filename: string,
+    thumbUrl?: string
   )
   /**
    * @deprecated It doesn't work correctly for offline project uploaded to web
@@ -214,17 +213,18 @@ export class Picture extends IdObject {
     name: string,
     imageType: string,
     dimension: Dimension,
-    fileurl?: string | undefined | null
+    fileurl?: string | undefined | null,
+    thumbUrl?: string
   )
   constructor(
     public name: string,
     public imageType: string,
     public dimension: Dimension,
     public fileurl?: string,
-    public filename?: string
+    public filename?: string,
+    public thumbUrl?: string
   ) {
     super()
-    this.thumbUrl = fileurl
   }
 }
 
